@@ -1,0 +1,926 @@
+[
+  {
+    "doc": "INVOICE_7GU0X28XM.PDF",
+    "row": 1,
+    "field": "freeQuantity",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7GU0X28XM.PDF",
+    "row": 2,
+    "field": "freeQuantity",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7GU0X28XM.PDF",
+    "row": 4,
+    "field": "freeQuantity",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7GU0X28XM.PDF",
+    "row": 5,
+    "field": "pack",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7GU0X28XM.PDF",
+    "row": 5,
+    "field": "freeQuantity",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7GU0X28XM.PDF",
+    "row": 6,
+    "field": "freeQuantity",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7GU0X28XM.PDF",
+    "row": 7,
+    "field": "pack",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7GU0X28XM.PDF",
+    "row": 7,
+    "field": "freeQuantity",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7GU0X28XM.PDF",
+    "row": 8,
+    "field": "freeQuantity",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7GU0X28XM.PDF",
+    "row": 9,
+    "field": "freeQuantity",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7GX167AKM.PDF",
+    "row": 1,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7HC0MTOZ2.PDF",
+    "row": 0,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7HC0MTOZ2.PDF",
+    "row": 1,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7HC0MTOZ2.PDF",
+    "row": 3,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7HC0MTOZ2.PDF",
+    "row": 4,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7HC0MTOZ2.PDF",
+    "row": 9,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7HC0MTOZ2.PDF",
+    "row": 10,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7HC0MTOZ2.PDF",
+    "row": 11,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7HC0MTOZ2.PDF",
+    "row": 12,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "INVOICE_7HC0MTOZ2.PDF",
+    "row": 13,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 0,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 0,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 0,
+    "field": "company",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 1,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 1,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 2,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 2,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 3,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 3,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 4,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 4,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 4,
+    "field": "company",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 5,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 5,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 5,
+    "field": "company",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 6,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 6,
+    "field": "company",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 7,
+    "field": "expiryDate",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 7,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 7,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 7,
+    "field": "company",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 8,
+    "field": "expiryDate",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 8,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 8,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 8,
+    "field": "company",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 9,
+    "field": "expiryDate",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 9,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 9,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 9,
+    "field": "company",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 10,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 10,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 11,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 11,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 12,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 12,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 13,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 13,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 14,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 14,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 15,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 15,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 16,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 16,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 17,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 17,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 18,
+    "field": "batchNo",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 18,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 18,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 19,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 19,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 19,
+    "field": "company",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 20,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 20,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 20,
+    "field": "company",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 21,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 21,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 22,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 22,
+    "field": "mrp",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "Invoice.pdf",
+    "row": 22,
+    "field": "company",
+    "match": "MISMATCH",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "PHUB_L22014.pdf",
+    "row": 1,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "PHUB_L22014.pdf",
+    "row": 2,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "PHUB_L22014.pdf",
+    "row": 3,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "PHUB_L22014.pdf",
+    "row": 4,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "PHUB_L22014.pdf",
+    "row": 8,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "PHUB_L22014.pdf",
+    "row": 9,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "PHUB_L22014.pdf",
+    "row": 10,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "PHUB_L22014.pdf",
+    "row": 11,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "PHUB_L22014.pdf",
+    "row": 12,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "PHUB_L22014.pdf",
+    "row": 13,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "PHUB_L22014.pdf",
+    "row": 19,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "SI26-000698.pdf",
+    "row": 1,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "SI26-000698.pdf",
+    "row": 2,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "SI26-000698.pdf",
+    "row": 3,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "SI26-000698.pdf",
+    "row": 4,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "SI26-000698.pdf",
+    "row": 5,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 0,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 1,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 2,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 3,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 4,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 5,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 6,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 7,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 8,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 9,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 10,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 11,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 12,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 13,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 14,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 15,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 18,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 20,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 21,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 22,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 24,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 25,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 28,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 29,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 30,
+    "field": "pack",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 30,
+    "field": "batchNo",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 30,
+    "field": "expiryDate",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 30,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 30,
+    "field": "hsnCode",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 30,
+    "field": "company",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 31,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 32,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 33,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 34,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 36,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 37,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  },
+  {
+    "doc": "invoice (1).pdf",
+    "row": 38,
+    "field": "freeQuantity",
+    "match": "MISSING",
+    "root": "VALUE_NORMALIZATION"
+  }
+]

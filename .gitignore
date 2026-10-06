@@ -26,3 +26,10 @@ _undo_*.py
 .idea/
 .DS_Store
 Thumbs.db
+
+# Chat History & IDE Session Dumps (Ignore private logs, preserve docs in git)
+.chat_history/
+chat_history/
+*.chat.json
+*.session.json
+.conversations/

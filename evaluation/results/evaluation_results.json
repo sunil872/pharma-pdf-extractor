@@ -1,0 +1,609 @@
+{
+  "evaluation_timestamp": "2026-09-16T06:19:10Z",
+  "total_documents_evaluated": 9,
+  "total_evaluation_time_seconds": 60.861,
+  "average_document_time_ms": 6762.3,
+  "dataset_categories": {
+    "GOLDEN": 9,
+    "GOLDEN_V1": 0,
+    "REAL": 0,
+    "SYNTHETIC": 0,
+    "EDGE_CASE": 0,
+    "OTHER": 0
+  },
+  "decision_breakdown": {
+    "AUTO_ACCEPT": 2,
+    "REVIEW_REQUIRED": 5,
+    "UNRESOLVED": 2,
+    "FAILED": 0
+  },
+  "documents": [
+    {
+      "document_id": "c26b45256359ae1674a2c8b1010fe545da32d142b305944de57e2f04a8625b1e",
+      "filename": "INVOICE_7GU0X28XM.PDF",
+      "dataset_category": "GOLDEN",
+      "sha256": "c26b45256359ae1674a2c8b1010fe545da32d142b305944de57e2f04a8625b1e",
+      "hash_valid": true,
+      "ground_truth_available": true,
+      "supplier_name": "PRAPTI MEDICARE",
+      "gstin": "36AASFP4005A1ZJ",
+      "decision": "REVIEW_REQUIRED",
+      "confidence": 63.6,
+      "extracted_row_count": 11,
+      "expected_row_count": 11,
+      "is_correct": true,
+      "field_error_count": 0,
+      "erroneous_fields": [],
+      "row_error_count": 0,
+      "validation_warnings": [],
+      "difficult_flags": [
+        "unnamed_columns",
+        "multiple_logical_values_in_cell",
+        "quantity_free_merged",
+        "amount_gst_merged"
+      ],
+      "processing_time_ms": 5459.850788116455,
+      "likely_root_cause": "LOGICAL_SUBCOLUMN_SPLIT"
+    },
+    {
+      "document_id": "faf7092e0a7a914d13594c518f88a08ff1a87b9b5fbec35e997c875630b4d613",
+      "filename": "INVOICE_7GX167AKM.PDF",
+      "dataset_category": "GOLDEN",
+      "sha256": "faf7092e0a7a914d13594c518f88a08ff1a87b9b5fbec35e997c875630b4d613",
+      "hash_valid": true,
+      "ground_truth_available": true,
+      "supplier_name": "MOHIT PHARMA",
+      "gstin": "36AAZFP3596K1Z5",
+      "decision": "REVIEW_REQUIRED",
+      "confidence": 93.6,
+      "extracted_row_count": 4,
+      "expected_row_count": 4,
+      "is_correct": true,
+      "field_error_count": 0,
+      "erroneous_fields": [],
+      "row_error_count": 0,
+      "validation_warnings": [],
+      "difficult_flags": [
+        "multiple_logical_values_in_cell",
+        "amount_gst_merged",
+        "missing_gst"
+      ],
+      "processing_time_ms": 1827.7273178100586,
+      "likely_root_cause": "LOGICAL_SUBCOLUMN_SPLIT"
+    },
+    {
+      "document_id": "a8e02a4c12d2946a276d1cd83858a1b8a1ea44902d4459c1d807ff8a398cbd11",
+      "filename": "INVOICE_7HC0MTOZ2.PDF",
+      "dataset_category": "GOLDEN",
+      "sha256": "a8e02a4c12d2946a276d1cd83858a1b8a1ea44902d4459c1d807ff8a398cbd11",
+      "hash_valid": true,
+      "ground_truth_available": true,
+      "supplier_name": "PASHUPATI MEDICAL DISTRIBUTORS",
+      "gstin": "36CGBPA3297A1ZW",
+      "decision": "UNRESOLVED",
+      "confidence": 45.9,
+      "extracted_row_count": 17,
+      "expected_row_count": 15,
+      "is_correct": false,
+      "field_error_count": 0,
+      "erroneous_fields": [],
+      "row_error_count": 2,
+      "validation_warnings": [],
+      "difficult_flags": [
+        "multiple_logical_values_in_cell",
+        "quantity_free_merged",
+        "amount_gst_merged"
+      ],
+      "processing_time_ms": 3213.82474899292,
+      "likely_root_cause": "LOGICAL_SUBCOLUMN_SPLIT"
+    },
+    {
+      "document_id": "4ab52431c492cc221df4b39c20dc8721ff483a5d77cdf1f275a061b7c0eb090a",
+      "filename": "INVOICE_7HH0S5IPC.PDF",
+      "dataset_category": "GOLDEN",
+      "sha256": "4ab52431c492cc221df4b39c20dc8721ff483a5d77cdf1f275a061b7c0eb090a",
+      "hash_valid": true,
+      "ground_truth_available": true,
+      "supplier_name": "GAJANAND MEDICAL AGENCIES",
+      "gstin": "36AAZFP3596K1Z5",
+      "decision": "AUTO_ACCEPT",
+      "confidence": 98.5,
+      "extracted_row_count": 9,
+      "expected_row_count": 9,
+      "is_correct": true,
+      "field_error_count": 0,
+      "erroneous_fields": [],
+      "row_error_count": 0,
+      "validation_warnings": [],
+      "difficult_flags": [
+        "multiple_logical_values_in_cell",
+        "quantity_free_merged",
+        "amount_gst_merged"
+      ],
+      "processing_time_ms": 1193.2129859924316,
+      "likely_root_cause": "LOGICAL_SUBCOLUMN_SPLIT"
+    },
+    {
+      "document_id": "c0d02b670e2caa940714baa6829e247584f11ad2f8fd78b4a1a6037bf0b69a3c",
+      "filename": "Invoice.pdf",
+      "dataset_category": "GOLDEN",
+      "sha256": "c0d02b670e2caa940714baa6829e247584f11ad2f8fd78b4a1a6037bf0b69a3c",
+      "hash_valid": true,
+      "ground_truth_available": true,
+      "supplier_name": "JP LOGISTICS",
+      "gstin": "36ABLPA4990K1ZB",
+      "decision": "UNRESOLVED",
+      "confidence": 45.6,
+      "extracted_row_count": 23,
+      "expected_row_count": 23,
+      "is_correct": true,
+      "field_error_count": 0,
+      "erroneous_fields": [],
+      "row_error_count": 0,
+      "validation_warnings": [],
+      "difficult_flags": [],
+      "processing_time_ms": 8864.537477493286,
+      "likely_root_cause": "UNKNOWN"
+    },
+    {
+      "document_id": "563fa908c438ea82fcbeca987fe3bed7e54a42da9986ab3a3531d97e946f6de0",
+      "filename": "PHUB_L22014.pdf",
+      "dataset_category": "GOLDEN",
+      "sha256": "563fa908c438ea82fcbeca987fe3bed7e54a42da9986ab3a3531d97e946f6de0",
+      "hash_valid": true,
+      "ground_truth_available": true,
+      "supplier_name": "SHRI AJAY MEDICAL AGENCIES",
+      "gstin": "36ACUFS2399N1ZY",
+      "decision": "REVIEW_REQUIRED",
+      "confidence": 64.4,
+      "extracted_row_count": 22,
+      "expected_row_count": 22,
+      "is_correct": true,
+      "field_error_count": 0,
+      "erroneous_fields": [],
+      "row_error_count": 0,
+      "validation_warnings": [],
+      "difficult_flags": [
+        "multiple_logical_values_in_cell",
+        "quantity_free_merged",
+        "amount_gst_merged"
+      ],
+      "processing_time_ms": 10116.748094558716,
+      "likely_root_cause": "LOGICAL_SUBCOLUMN_SPLIT"
+    },
+    {
+      "document_id": "6077037eaf235893d0e9ddf0a8163166fb8cea1a350fbd5995d100ba5f27ea1f",
+      "filename": "SI26-000698.pdf",
+      "dataset_category": "GOLDEN",
+      "sha256": "6077037eaf235893d0e9ddf0a8163166fb8cea1a350fbd5995d100ba5f27ea1f",
+      "hash_valid": true,
+      "ground_truth_available": true,
+      "supplier_name": "CAPITA MediHub",
+      "gstin": "36AATFC0891J1ZY",
+      "decision": "AUTO_ACCEPT",
+      "confidence": 95.8,
+      "extracted_row_count": 6,
+      "expected_row_count": 6,
+      "is_correct": true,
+      "field_error_count": 0,
+      "erroneous_fields": [],
+      "row_error_count": 0,
+      "validation_warnings": [],
+      "difficult_flags": [
+        "multiple_logical_values_in_cell",
+        "quantity_free_merged",
+        "amount_gst_merged"
+      ],
+      "processing_time_ms": 9892.746448516846,
+      "likely_root_cause": "LOGICAL_SUBCOLUMN_SPLIT"
+    },
+    {
+      "document_id": "48cfe98fcdce1509f8165c4bd7fd3f96bb7e127b63885267b325c3827fb471b5",
+      "filename": "Sunil_Medicare_Sample_Invoice.pdf",
+      "dataset_category": "GOLDEN",
+      "sha256": "48cfe98fcdce1509f8165c4bd7fd3f96bb7e127b63885267b325c3827fb471b5",
+      "hash_valid": true,
+      "ground_truth_available": true,
+      "supplier_name": "SUNIL MEDICARE",
+      "gstin": "36ABCDE1234F1Z5",
+      "decision": "REVIEW_REQUIRED",
+      "confidence": 79.5,
+      "extracted_row_count": 20,
+      "expected_row_count": 18,
+      "is_correct": false,
+      "field_error_count": 0,
+      "erroneous_fields": [],
+      "row_error_count": 2,
+      "validation_warnings": [],
+      "difficult_flags": [
+        "multiple_logical_values_in_cell",
+        "quantity_free_merged",
+        "amount_gst_merged"
+      ],
+      "processing_time_ms": 12091.578722000122,
+      "likely_root_cause": "LOGICAL_SUBCOLUMN_SPLIT"
+    },
+    {
+      "document_id": "ae83061e055990bd3a533668b554570491e80f967c10490c72b227192c77ab0d",
+      "filename": "invoice (1).pdf",
+      "dataset_category": "GOLDEN",
+      "sha256": "ae83061e055990bd3a533668b554570491e80f967c10490c72b227192c77ab0d",
+      "hash_valid": true,
+      "ground_truth_available": true,
+      "supplier_name": "SRI HARSHA PHARMA",
+      "gstin": "36BIXPR6113F1ZU",
+      "decision": "REVIEW_REQUIRED",
+      "confidence": 96.4,
+      "extracted_row_count": 39,
+      "expected_row_count": 40,
+      "is_correct": false,
+      "field_error_count": 0,
+      "erroneous_fields": [],
+      "row_error_count": 1,
+      "validation_warnings": [],
+      "difficult_flags": [
+        "multiple_logical_values_in_cell",
+        "quantity_free_merged",
+        "amount_gst_merged",
+        "missing_gst"
+      ],
+      "processing_time_ms": 8169.251203536987,
+      "likely_root_cause": "LOGICAL_SUBCOLUMN_SPLIT"
+    }
+  ],
+  "field_metrics": {},
+  "row_metrics": {
+    "expected_rows": 148,
+    "extracted_rows": 151,
+    "matched_rows": 147,
+    "missing_rows": 1,
+    "extra_rows": 4,
+    "duplicate_rows": 0,
+    "split_rows": 0,
+    "merged_rows": 0,
+    "continuation_errors": 0,
+    "row_accuracy": 0.9735
+  },
+  "column_mapping_confusion": {
+    "itemName": {
+      "itemName": 2
+    },
+    "pack": {
+      "pack": 10
+    },
+    "company": {
+      "company": 2
+    },
+    "expiryDate": {
+      "expiryDate": 9
+    },
+    "mrp": {
+      "mrp": 9
+    },
+    "rate": {
+      "rate": 10
+    },
+    "quantity": {
+      "quantity": 8
+    },
+    "freeQuantity": {
+      "freeQuantity": 6
+    },
+    "discountPercent": {
+      "discountPercent": 8
+    },
+    "amount": {
+      "amount": 7
+    },
+    "gstPercent": {
+      "gstPercent": 6
+    },
+    "hsnCode": {
+      "hsnCode": 8
+    },
+    "batchNo": {
+      "batchNo": 8
+    },
+    "sgstPercent": {
+      "sgstPercent": 2
+    },
+    "taxableAmount": {
+      "taxableAmount": 2
+    },
+    "netAmount": {
+      "netAmount": 3
+    },
+    "cgstPercent": {
+      "cgstPercent": 1
+    }
+  },
+  "root_cause_distribution": {
+    "TRUE_COLUMN_BOUNDARY_ERROR": 16
+  },
+  "confidence_calibration": [
+    {
+      "bucket_name": "0-50",
+      "min_conf": 0.0,
+      "max_conf": 50.0,
+      "total_documents": 2,
+      "sample_count": 2,
+      "correct_documents": 1,
+      "incorrect_documents": 1,
+      "unknown_count": 0,
+      "review_required_count": 0,
+      "unresolved_count": 2,
+      "empirical_accuracy": 0.5
+    },
+    {
+      "bucket_name": "50-60",
+      "min_conf": 50.0,
+      "max_conf": 60.0,
+      "total_documents": 0,
+      "sample_count": 0,
+      "correct_documents": 0,
+      "incorrect_documents": 0,
+      "unknown_count": 0,
+      "review_required_count": 0,
+      "unresolved_count": 0,
+      "empirical_accuracy": 0.0
+    },
+    {
+      "bucket_name": "60-70",
+      "min_conf": 60.0,
+      "max_conf": 70.0,
+      "total_documents": 2,
+      "sample_count": 2,
+      "correct_documents": 2,
+      "incorrect_documents": 0,
+      "unknown_count": 0,
+      "review_required_count": 2,
+      "unresolved_count": 0,
+      "empirical_accuracy": 1.0
+    },
+    {
+      "bucket_name": "70-80",
+      "min_conf": 70.0,
+      "max_conf": 80.0,
+      "total_documents": 1,
+      "sample_count": 1,
+      "correct_documents": 0,
+      "incorrect_documents": 1,
+      "unknown_count": 0,
+      "review_required_count": 1,
+      "unresolved_count": 0,
+      "empirical_accuracy": 0.0
+    },
+    {
+      "bucket_name": "80-90",
+      "min_conf": 80.0,
+      "max_conf": 90.0,
+      "total_documents": 0,
+      "sample_count": 0,
+      "correct_documents": 0,
+      "incorrect_documents": 0,
+      "unknown_count": 0,
+      "review_required_count": 0,
+      "unresolved_count": 0,
+      "empirical_accuracy": 0.0
+    },
+    {
+      "bucket_name": "90-95",
+      "min_conf": 90.0,
+      "max_conf": 95.0,
+      "total_documents": 1,
+      "sample_count": 1,
+      "correct_documents": 1,
+      "incorrect_documents": 0,
+      "unknown_count": 0,
+      "review_required_count": 1,
+      "unresolved_count": 0,
+      "empirical_accuracy": 1.0
+    },
+    {
+      "bucket_name": "95-100",
+      "min_conf": 95.0,
+      "max_conf": 100.0,
+      "total_documents": 3,
+      "sample_count": 3,
+      "correct_documents": 2,
+      "incorrect_documents": 1,
+      "unknown_count": 0,
+      "review_required_count": 1,
+      "unresolved_count": 0,
+      "empirical_accuracy": 0.6667
+    }
+  ],
+  "auto_accept_safety": {
+    "total_auto_accept": 2,
+    "verified_count": 2,
+    "fully_correct": 2,
+    "with_field_errors": 0,
+    "with_row_errors": 0,
+    "precision": 1.0,
+    "error_rate": 0.0,
+    "problematic_fields": []
+  },
+  "review_required_analysis": {
+    "total_review_required": 5,
+    "top_warning_triggers": [],
+    "top_field_triggers": []
+  },
+  "unresolved_analysis": {
+    "total_unresolved": 2,
+    "ranked_root_causes": [
+      {
+        "root_cause": "LOGICAL_SUBCOLUMN_SPLIT",
+        "count": 1
+      },
+      {
+        "root_cause": "UNKNOWN",
+        "count": 1
+      }
+    ],
+    "missing_evidence_breakdown": []
+  },
+  "layout_diversity": {
+    "unique_suppliers_count": 9,
+    "unique_gstins_count": 8,
+    "unique_layout_profiles_count": 1,
+    "average_layouts_per_supplier": 1.0,
+    "supplier_breakdown": {
+      "PRAPTI MEDICARE": 1,
+      "MOHIT PHARMA": 1,
+      "PASHUPATI MEDICAL DISTRIBUTORS": 1,
+      "GAJANAND MEDICAL AGENCIES": 1,
+      "JP LOGISTICS": 1,
+      "SHRI AJAY MEDICAL AGENCIES": 1,
+      "CAPITA MediHub": 1,
+      "SUNIL MEDICARE": 1,
+      "SRI HARSHA PHARMA": 1
+    }
+  },
+  "supplier_statistics": [
+    {
+      "supplier_name": "PRAPTI MEDICARE",
+      "gstin": "36AASFP4005A1ZJ",
+      "layout_profile_id": null,
+      "layout_version": null,
+      "dataset_category": "GOLDEN",
+      "doc_count": 1,
+      "auto_accept_pct": 0.0,
+      "review_required_pct": 100.0,
+      "unresolved_pct": 0.0,
+      "failed_pct": 0.0,
+      "avg_confidence": 63.6,
+      "min_confidence": 63.6,
+      "avg_processing_time_ms": 5459.85,
+      "common_errors": []
+    },
+    {
+      "supplier_name": "MOHIT PHARMA",
+      "gstin": "36AAZFP3596K1Z5",
+      "layout_profile_id": null,
+      "layout_version": null,
+      "dataset_category": "GOLDEN",
+      "doc_count": 1,
+      "auto_accept_pct": 0.0,
+      "review_required_pct": 100.0,
+      "unresolved_pct": 0.0,
+      "failed_pct": 0.0,
+      "avg_confidence": 93.6,
+      "min_confidence": 93.6,
+      "avg_processing_time_ms": 1827.73,
+      "common_errors": []
+    },
+    {
+      "supplier_name": "PASHUPATI MEDICAL DISTRIBUTORS",
+      "gstin": "36CGBPA3297A1ZW",
+      "layout_profile_id": null,
+      "layout_version": null,
+      "dataset_category": "GOLDEN",
+      "doc_count": 1,
+      "auto_accept_pct": 0.0,
+      "review_required_pct": 0.0,
+      "unresolved_pct": 100.0,
+      "failed_pct": 0.0,
+      "avg_confidence": 45.9,
+      "min_confidence": 45.9,
+      "avg_processing_time_ms": 3213.82,
+      "common_errors": []
+    },
+    {
+      "supplier_name": "GAJANAND MEDICAL AGENCIES",
+      "gstin": "36AAZFP3596K1Z5",
+      "layout_profile_id": null,
+      "layout_version": null,
+      "dataset_category": "GOLDEN",
+      "doc_count": 1,
+      "auto_accept_pct": 100.0,
+      "review_required_pct": 0.0,
+      "unresolved_pct": 0.0,
+      "failed_pct": 0.0,
+      "avg_confidence": 98.5,
+      "min_confidence": 98.5,
+      "avg_processing_time_ms": 1193.21,
+      "common_errors": []
+    },
+    {
+      "supplier_name": "JP LOGISTICS",
+      "gstin": "36ABLPA4990K1ZB",
+      "layout_profile_id": null,
+      "layout_version": null,
+      "dataset_category": "GOLDEN",
+      "doc_count": 1,
+      "auto_accept_pct": 0.0,
+      "review_required_pct": 0.0,
+      "unresolved_pct": 100.0,
+      "failed_pct": 0.0,
+      "avg_confidence": 45.6,
+      "min_confidence": 45.6,
+      "avg_processing_time_ms": 8864.54,
+      "common_errors": []
+    },
+    {
+      "supplier_name": "SHRI AJAY MEDICAL AGENCIES",
+      "gstin": "36ACUFS2399N1ZY",
+      "layout_profile_id": null,
+      "layout_version": null,
+      "dataset_category": "GOLDEN",
+      "doc_count": 1,
+      "auto_accept_pct": 0.0,
+      "review_required_pct": 100.0,
+      "unresolved_pct": 0.0,
+      "failed_pct": 0.0,
+      "avg_confidence": 64.4,
+      "min_confidence": 64.4,
+      "avg_processing_time_ms": 10116.75,
+      "common_errors": []
+    },
+    {
+      "supplier_name": "CAPITA MediHub",
+      "gstin": "36AATFC0891J1ZY",
+      "layout_profile_id": null,
+      "layout_version": null,
+      "dataset_category": "GOLDEN",
+      "doc_count": 1,
+      "auto_accept_pct": 100.0,
+      "review_required_pct": 0.0,
+      "unresolved_pct": 0.0,
+      "failed_pct": 0.0,
+      "avg_confidence": 95.8,
+      "min_confidence": 95.8,
+      "avg_processing_time_ms": 9892.75,
+      "common_errors": []
+    },
+    {
+      "supplier_name": "SUNIL MEDICARE",
+      "gstin": "36ABCDE1234F1Z5",
+      "layout_profile_id": null,
+      "layout_version": null,
+      "dataset_category": "GOLDEN",
+      "doc_count": 1,
+      "auto_accept_pct": 0.0,
+      "review_required_pct": 100.0,
+      "unresolved_pct": 0.0,
+      "failed_pct": 0.0,
+      "avg_confidence": 79.5,
+      "min_confidence": 79.5,
+      "avg_processing_time_ms": 12091.58,
+      "common_errors": []
+    },
+    {
+      "supplier_name": "SRI HARSHA PHARMA",
+      "gstin": "36BIXPR6113F1ZU",
+      "layout_profile_id": null,
+      "layout_version": null,
+      "dataset_category": "GOLDEN",
+      "doc_count": 1,
+      "auto_accept_pct": 0.0,
+      "review_required_pct": 100.0,
+      "unresolved_pct": 0.0,
+      "failed_pct": 0.0,
+      "avg_confidence": 96.4,
+      "min_confidence": 96.4,
+      "avg_processing_time_ms": 8169.25,
+      "common_errors": []
+    }
+  ],
+  "engineering_priorities": []
+}

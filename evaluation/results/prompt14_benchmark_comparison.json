@@ -1,0 +1,2776 @@
+{
+  "comparison_title": "Prompt 12 vs Prompt 13 Canonical 9-PDF Benchmark",
+  "benchmark_manifest": "evaluation/golden_manifest_v1.json",
+  "total_documents": 9,
+  "sha256_all_verified": true,
+  "summary": {
+    "p12_total_rows": 148,
+    "p13_total_rows": 147,
+    "p12_auto_accept": 3,
+    "p13_auto_accept": 4,
+    "p12_review_required": 5,
+    "p13_review_required": 5,
+    "p12_unresolved": 1,
+    "p13_unresolved": 0
+  },
+  "documents": [
+    {
+      "filename": "INVOICE_7GU0X28XM.PDF",
+      "sha256": "c26b45256359ae1674a2c8b1010fe545da32d142b305944de57e2f04a8625b1e",
+      "sha_verified": true,
+      "supplier_name": "PRAPTI MEDICARE",
+      "expected_rows": 11,
+      "p12_rows": 11,
+      "p13_rows": 11,
+      "p12_decision": "REVIEW_REQUIRED",
+      "p13_decision": "REVIEW_REQUIRED",
+      "p12_confidence": 63.5,
+      "p13_confidence": 63.6,
+      "mappings": {
+        "S.": {
+          "mapped_to": null,
+          "status": "unresolved",
+          "confidence": 0.0,
+          "candidates": [],
+          "evidence": [],
+          "col_idx": 0,
+          "x0": 15.36,
+          "x1": 38.012
+        },
+        "QTY": {
+          "mapped_to": "quantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "quantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 1,
+          "x0": 38.012,
+          "x1": 76.676
+        },
+        "FREE": {
+          "mapped_to": "freeQuantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "freeQuantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 2,
+          "x0": 76.676,
+          "x1": 114.108
+        },
+        "MFR": {
+          "mapped_to": "company",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "company",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 3,
+          "x0": 114.108,
+          "x1": 146.82
+        },
+        "BOXS": {
+          "mapped_to": "pack",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "pack",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 4,
+          "x0": 146.82,
+          "x1": 186.54
+        },
+        "PRODUCTNAME": {
+          "mapped_to": "itemName",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "itemName",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 5,
+          "x0": 186.54,
+          "x1": 304.34299999999996
+        },
+        "PACKING": {
+          "mapped_to": "pack",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "pack",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 6,
+          "x0": 304.34299999999996,
+          "x1": 391.754
+        },
+        "P.T.R": {
+          "mapped_to": "rate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "rate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 7,
+          "x0": 391.754,
+          "x1": 431.52200000000005
+        },
+        "OLD": {
+          "mapped_to": null,
+          "status": "unresolved",
+          "confidence": 0.0,
+          "candidates": [],
+          "evidence": [],
+          "col_idx": 8,
+          "x0": 431.52200000000005,
+          "x1": 481.5509999999996
+        },
+        "Batch": {
+          "mapped_to": "batchNo",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "batchNo",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 9,
+          "x0": 481.5509999999996,
+          "x1": 539.762
+        },
+        "EXP": {
+          "mapped_to": "expiryDate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "expiryDate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 10,
+          "x0": 539.762,
+          "x1": 579.172
+        },
+        "M.R.P": {
+          "mapped_to": "mrp",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "mrp",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 11,
+          "x0": 579.172,
+          "x1": 621.072
+        },
+        "RATE": {
+          "mapped_to": "rate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "rate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 12,
+          "x0": 621.072,
+          "x1": 658.6780000000001
+        },
+        "SCH": {
+          "mapped_to": "discountPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "discountPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 13,
+          "x0": 658.6780000000001,
+          "x1": 699.5719999999992
+        },
+        "AMOUNT": {
+          "mapped_to": "amount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "amount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 14,
+          "x0": 699.5719999999992,
+          "x1": 751.1879999999991
+        },
+        "GST": {
+          "mapped_to": "gstPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "gstPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 15,
+          "x0": 751.1879999999991,
+          "x1": 776.9999999999995
+        },
+        "Unnamed_Col_16": {
+          "mapped_to": "hsnCode",
+          "status": "inferred",
+          "confidence": 95.0,
+          "candidates": [
+            {
+              "field": "hsnCode",
+              "score": 0.95,
+              "evidence": [
+                "100% values match 4/6/8-digit HSN codes",
+                "100% pure numeric values (0% text)",
+                "positioned adjacent to financial/tax columns"
+              ]
+            }
+          ],
+          "evidence": [
+            "100% values match 4/6/8-digit HSN codes",
+            "100% pure numeric values (0% text)",
+            "positioned adjacent to financial/tax columns"
+          ],
+          "col_idx": 16,
+          "x0": 776.9999999999995,
+          "x1": 821.4900000000001
+        }
+      }
+    },
+    {
+      "filename": "INVOICE_7GX167AKM.PDF",
+      "sha256": "faf7092e0a7a914d13594c518f88a08ff1a87b9b5fbec35e997c875630b4d613",
+      "sha_verified": true,
+      "supplier_name": "MOHIT PHARMA",
+      "expected_rows": 4,
+      "p12_rows": 4,
+      "p13_rows": 4,
+      "p12_decision": "AUTO_ACCEPT",
+      "p13_decision": "AUTO_ACCEPT",
+      "p12_confidence": 94.3,
+      "p13_confidence": 92.1,
+      "mappings": {
+        "Sn.": {
+          "mapped_to": null,
+          "status": "unresolved",
+          "confidence": 0.0,
+          "candidates": [],
+          "evidence": [],
+          "col_idx": 0,
+          "x0": 19.11,
+          "x1": 46.379000000000005
+        },
+        "Qty.": {
+          "mapped_to": "quantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "quantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 1,
+          "x0": 46.379000000000005,
+          "x1": 80.8745
+        },
+        "Pack": {
+          "mapped_to": "pack",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "pack",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 2,
+          "x0": 80.8745,
+          "x1": 113.12
+        },
+        "Product": {
+          "mapped_to": "itemName",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "itemName",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 3,
+          "x0": 113.12,
+          "x1": 196.7435
+        },
+        "OLDMRP": {
+          "mapped_to": "mrp",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "mrp",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 4,
+          "x0": 196.7435,
+          "x1": 276.875
+        },
+        "Batch": {
+          "mapped_to": "batchNo",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "batchNo",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 5,
+          "x0": 276.875,
+          "x1": 327.125
+        },
+        "Exp.": {
+          "mapped_to": "expiryDate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "expiryDate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 6,
+          "x0": 327.125,
+          "x1": 357.00350000000003
+        },
+        "HSN": {
+          "mapped_to": "hsnCode",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "hsnCode",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 7,
+          "x0": 357.00350000000003,
+          "x1": 389.253
+        },
+        "MRP": {
+          "mapped_to": "mrp",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "mrp",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 8,
+          "x0": 389.253,
+          "x1": 431.8625
+        },
+        "Rate": {
+          "mapped_to": "rate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "rate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 9,
+          "x0": 431.8625,
+          "x1": 463.5075
+        },
+        "Dis": {
+          "mapped_to": "discountPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "discountPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 10,
+          "x0": 463.5075,
+          "x1": 487.78
+        },
+        "SGST": {
+          "mapped_to": "sgstPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "sgstPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 11,
+          "x0": 487.78,
+          "x1": 509.923
+        },
+        "CGST": {
+          "mapped_to": "cgstPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "cgstPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 12,
+          "x0": 509.923,
+          "x1": 528.76525
+        },
+        "6": {
+          "mapped_to": null,
+          "status": "unresolved",
+          "confidence": 0.0,
+          "candidates": [],
+          "evidence": [],
+          "col_idx": 13,
+          "x0": 528.76525,
+          "x1": 536.75
+        },
+        "Amount": {
+          "mapped_to": "amount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "amount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 14,
+          "x0": 536.75,
+          "x1": 579.24
+        }
+      }
+    },
+    {
+      "filename": "INVOICE_7HC0MTOZ2.PDF",
+      "sha256": "a8e02a4c12d2946a276d1cd83858a1b8a1ea44902d4459c1d807ff8a398cbd11",
+      "sha_verified": true,
+      "supplier_name": "PASHUPATI MEDICAL DISTRIBUTORS",
+      "expected_rows": 15,
+      "p12_rows": 15,
+      "p13_rows": 15,
+      "p12_decision": "REVIEW_REQUIRED",
+      "p13_decision": "REVIEW_REQUIRED",
+      "p12_confidence": 74.1,
+      "p13_confidence": 74.1,
+      "mappings": {
+        "SNO": {
+          "mapped_to": null,
+          "status": "unresolved",
+          "confidence": 0.0,
+          "candidates": [],
+          "evidence": [],
+          "col_idx": 0,
+          "x0": 18.25,
+          "x1": 47.7065
+        },
+        "MFR": {
+          "mapped_to": "company",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "company",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 1,
+          "x0": 47.7065,
+          "x1": 79.8305
+        },
+        "QTY": {
+          "mapped_to": "quantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "quantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 2,
+          "x0": 79.8305,
+          "x1": 115.70599999999999
+        },
+        "Free": {
+          "mapped_to": "freeQuantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "freeQuantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 3,
+          "x0": 115.70599999999999,
+          "x1": 153.0125
+        },
+        "ProductNmae": {
+          "mapped_to": "itemName",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "itemName",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 4,
+          "x0": 153.0125,
+          "x1": 290.7395
+        },
+        "pack": {
+          "mapped_to": "pack",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "pack",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 5,
+          "x0": 290.7395,
+          "x1": 379.433
+        },
+        "Batch": {
+          "mapped_to": "batchNo",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "batchNo",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 6,
+          "x0": 379.433,
+          "x1": 437.07349999999997
+        },
+        "Exp": {
+          "mapped_to": "expiryDate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "expiryDate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 7,
+          "x0": 437.07349999999997,
+          "x1": 496.0065
+        },
+        "MRP": {
+          "mapped_to": "mrp",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "mrp",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 8,
+          "x0": 496.0065,
+          "x1": 545.873
+        },
+        "Rate": {
+          "mapped_to": "rate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "rate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 9,
+          "x0": 545.873,
+          "x1": 583.556
+        },
+        "Disc": {
+          "mapped_to": "discountPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "discountPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 10,
+          "x0": 583.556,
+          "x1": 623.8385000000001
+        },
+        "Taxable": {
+          "mapped_to": "taxableAmount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "taxableAmount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 11,
+          "x0": 623.8385000000001,
+          "x1": 674.255
+        },
+        "GST": {
+          "mapped_to": "gstPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "gstPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 12,
+          "x0": 674.255,
+          "x1": 703.7885
+        },
+        "Net": {
+          "mapped_to": "netAmount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "netAmount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 13,
+          "x0": 703.7885,
+          "x1": 729.9830000000001
+        },
+        "Amount": {
+          "mapped_to": "amount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "amount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 14,
+          "x0": 729.9830000000001,
+          "x1": 785.927
+        },
+        "HSN": {
+          "mapped_to": "hsnCode",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "hsnCode",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 15,
+          "x0": 785.927,
+          "x1": 825.296
+        }
+      }
+    },
+    {
+      "filename": "INVOICE_7HH0S5IPC.PDF",
+      "sha256": "4ab52431c492cc221df4b39c20dc8721ff483a5d77cdf1f275a061b7c0eb090a",
+      "sha_verified": true,
+      "supplier_name": "GAJANAND MEDICAL AGENCIES",
+      "expected_rows": 9,
+      "p12_rows": 9,
+      "p13_rows": 9,
+      "p12_decision": "AUTO_ACCEPT",
+      "p13_decision": "AUTO_ACCEPT",
+      "p12_confidence": 98.5,
+      "p13_confidence": 98.5,
+      "mappings": {
+        "P.T.R": {
+          "mapped_to": "rate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "rate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 0,
+          "x0": 19.11,
+          "x1": 54.8705
+        },
+        "PRODUCTNAME": {
+          "mapped_to": "itemName",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "itemName",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 1,
+          "x0": 54.8705,
+          "x1": 163.23649999999998
+        },
+        "PACK": {
+          "mapped_to": "pack",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "pack",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 2,
+          "x0": 163.23649999999998,
+          "x1": 222.494
+        },
+        "QTY": {
+          "mapped_to": "quantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "quantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 3,
+          "x0": 222.494,
+          "x1": 248.0015
+        },
+        "FREE": {
+          "mapped_to": "freeQuantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "freeQuantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 4,
+          "x0": 248.0015,
+          "x1": 271.484
+        },
+        "BATCH": {
+          "mapped_to": "batchNo",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "batchNo",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 5,
+          "x0": 271.484,
+          "x1": 321.6585
+        },
+        "EXP": {
+          "mapped_to": "expiryDate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "expiryDate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 6,
+          "x0": 321.6585,
+          "x1": 360.4955
+        },
+        "MRP": {
+          "mapped_to": "mrp",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "mrp",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 7,
+          "x0": 360.4955,
+          "x1": 390.0
+        },
+        "Rate": {
+          "mapped_to": "rate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "rate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 8,
+          "x0": 390.0,
+          "x1": 425.9955
+        },
+        "AMOUNT": {
+          "mapped_to": "amount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "amount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 9,
+          "x0": 425.9955,
+          "x1": 466.7635
+        },
+        "GST": {
+          "mapped_to": "gstPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "gstPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 10,
+          "x0": 466.7635,
+          "x1": 486.986
+        },
+        "HSN": {
+          "mapped_to": "hsnCode",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "hsnCode",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 11,
+          "x0": 486.986,
+          "x1": 531.1489999999999
+        },
+        "MFR": {
+          "mapped_to": "company",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "company",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 12,
+          "x0": 531.1489999999999,
+          "x1": 579.24
+        }
+      }
+    },
+    {
+      "filename": "Invoice.pdf",
+      "sha256": "c0d02b670e2caa940714baa6829e247584f11ad2f8fd78b4a1a6037bf0b69a3c",
+      "sha_verified": true,
+      "supplier_name": "JP LOGISTICS",
+      "expected_rows": 23,
+      "p12_rows": 23,
+      "p13_rows": 23,
+      "p12_decision": "UNRESOLVED",
+      "p13_decision": "REVIEW_REQUIRED",
+      "p12_confidence": 46.2,
+      "p13_confidence": 61.8,
+      "mappings": {
+        "ItemDescription": {
+          "mapped_to": "itemName",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "itemName",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 0,
+          "x0": 17.25,
+          "x1": 282.375013992
+        },
+        "Old": {
+          "mapped_to": "gstPercent",
+          "status": "inferred",
+          "confidence": 76.7,
+          "candidates": [
+            {
+              "field": "gstPercent",
+              "score": 0.7673913043478262,
+              "evidence": [
+                "96% standard statutory GST rates (['311.00', '0', '0', '0', '0'])",
+                "value scale (13.5) is fractional relative to monetary fields (36539236942.5)"
+              ]
+            },
+            {
+              "field": "freeQuantity",
+              "score": 0.6217391304347827,
+              "evidence": [
+                "96% scheme/zero quantities"
+              ]
+            }
+          ],
+          "evidence": [
+            "96% standard statutory GST rates (['311.00', '0', '0', '0', '0'])",
+            "value scale (13.5) is fractional relative to monetary fields (36539236942.5)"
+          ],
+          "col_idx": 1,
+          "x0": 282.375013992,
+          "x1": 337.49999856
+        },
+        "R.Mar": {
+          "mapped_to": null,
+          "status": "unresolved",
+          "confidence": 0.0,
+          "candidates": [],
+          "evidence": [],
+          "col_idx": 2,
+          "x0": 337.49999856,
+          "x1": 362.24999352
+        },
+        "Pack": {
+          "mapped_to": "pack",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "pack",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 3,
+          "x0": 362.24999352,
+          "x1": 395.6249952
+        },
+        "Batch": {
+          "mapped_to": "batchNo",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "batchNo",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 4,
+          "x0": 395.6249952,
+          "x1": 456.29159876
+        },
+        "Exp": {
+          "mapped_to": "expiryDate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "expiryDate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 5,
+          "x0": 456.29159876,
+          "x1": 493.874997232
+        },
+        "M.R.P": {
+          "mapped_to": "mrp",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "mrp",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 6,
+          "x0": 493.874997232,
+          "x1": 533.2499988239999
+        },
+        "PTR": {
+          "mapped_to": "rate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "rate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 7,
+          "x0": 533.2499988239999,
+          "x1": 567.75
+        },
+        "RATE": {
+          "mapped_to": "rate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "rate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 8,
+          "x0": 567.75,
+          "x1": 608.99999352
+        },
+        "AMOUNT": {
+          "mapped_to": "amount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "amount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 9,
+          "x0": 608.99999352,
+          "x1": 649.87499424
+        },
+        "DIS": {
+          "mapped_to": "discountPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "discountPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 10,
+          "x0": 649.87499424,
+          "x1": 719.25005976
+        },
+        "NetValue": {
+          "mapped_to": "netAmount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "netAmount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 11,
+          "x0": 719.25005976,
+          "x1": 807.74985912
+        }
+      }
+    },
+    {
+      "filename": "PHUB_L22014.pdf",
+      "sha256": "563fa908c438ea82fcbeca987fe3bed7e54a42da9986ab3a3531d97e946f6de0",
+      "sha_verified": true,
+      "supplier_name": "SHRI AJAY MEDICAL AGENCIES",
+      "expected_rows": 22,
+      "p12_rows": 22,
+      "p13_rows": 22,
+      "p12_decision": "REVIEW_REQUIRED",
+      "p13_decision": "REVIEW_REQUIRED",
+      "p12_confidence": 64.2,
+      "p13_confidence": 62.5,
+      "mappings": {
+        "MFGBy": {
+          "mapped_to": "company",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "company",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 0,
+          "x0": 0.0,
+          "x1": 35.96665407090025
+        },
+        "HSNCode": {
+          "mapped_to": "hsnCode",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "hsnCode",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 1,
+          "x0": 35.96665407090025,
+          "x1": 93.92670665970522
+        },
+        "QTY": {
+          "mapped_to": "quantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "quantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 2,
+          "x0": 93.92670665970522,
+          "x1": 129.8067471165146
+        },
+        "FREE": {
+          "mapped_to": "freeQuantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "freeQuantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 3,
+          "x0": 129.8067471165146,
+          "x1": 165.68678757332398
+        },
+        "PACK": {
+          "mapped_to": "pack",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "pack",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 4,
+          "x0": 165.68678757332398,
+          "x1": 201.56683537173924
+        },
+        "PRODUCTNAME": {
+          "mapped_to": "itemName",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "itemName",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 5,
+          "x0": 201.56683537173924,
+          "x1": 356.126752408374
+        },
+        "M.R.P": {
+          "mapped_to": "mrp",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "mrp",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 6,
+          "x0": 356.126752408374,
+          "x1": 472.28700298930005
+        },
+        "BATCHNO.": {
+          "mapped_to": "batchNo",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "batchNo",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 7,
+          "x0": 472.28700298930005,
+          "x1": 548.4864941040441
+        },
+        "E.X.P": {
+          "mapped_to": "expiryDate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "expiryDate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 8,
+          "x0": 548.4864941040441,
+          "x1": 597.686980827602
+        },
+        "P.T.R": {
+          "mapped_to": "rate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "rate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 9,
+          "x0": 597.686980827602,
+          "x1": 646.4069573483521
+        },
+        "RATE": {
+          "mapped_to": "rate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "rate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 10,
+          "x0": 646.4069573483521,
+          "x1": 714.9268798098462
+        },
+        "AMOUNT": {
+          "mapped_to": "amount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "amount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 11,
+          "x0": 714.9268798098462,
+          "x1": 749.6071820172658
+        },
+        "Disc": {
+          "mapped_to": "discountPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "discountPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 12,
+          "x0": 749.6071820172658,
+          "x1": 797.7267698657054
+        },
+        "GST": {
+          "mapped_to": "gstPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "gstPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 13,
+          "x0": 797.7267698657054,
+          "x1": 820.0227500656772
+        }
+      }
+    },
+    {
+      "filename": "SI26-000698.pdf",
+      "sha256": "6077037eaf235893d0e9ddf0a8163166fb8cea1a350fbd5995d100ba5f27ea1f",
+      "sha_verified": true,
+      "supplier_name": "CAPITA MediHub",
+      "expected_rows": 6,
+      "p12_rows": 6,
+      "p13_rows": 6,
+      "p12_decision": "AUTO_ACCEPT",
+      "p13_decision": "AUTO_ACCEPT",
+      "p12_confidence": 98.5,
+      "p13_confidence": 97.1,
+      "mappings": {
+        "SN": {
+          "mapped_to": "freeQuantity",
+          "status": "inferred",
+          "confidence": 65.0,
+          "candidates": [
+            {
+              "field": "freeQuantity",
+              "score": 0.65,
+              "evidence": [
+                "100% scheme/zero quantities"
+              ]
+            }
+          ],
+          "evidence": [
+            "100% scheme/zero quantities"
+          ],
+          "col_idx": 0,
+          "x0": 8.286135999999999,
+          "x1": 47.38503850000001
+        },
+        "ProductName": {
+          "mapped_to": "itemName",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "itemName",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 1,
+          "x0": 47.38503850000001,
+          "x1": 144.6287395
+        },
+        "Qty+Free": {
+          "mapped_to": "quantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "quantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 2,
+          "x0": 144.6287395,
+          "x1": 237.40477900000002
+        },
+        "Pack": {
+          "mapped_to": "pack",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "pack",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 3,
+          "x0": 237.40477900000002,
+          "x1": 271.0507795
+        },
+        "BatchNo": {
+          "mapped_to": "batchNo",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "batchNo",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 4,
+          "x0": 271.0507795,
+          "x1": 339.352181
+        },
+        "MRP": {
+          "mapped_to": "mrp",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "mrp",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 5,
+          "x0": 339.352181,
+          "x1": 378.141772
+        },
+        "Ex\u2026": {
+          "mapped_to": "expiryDate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "expiryDate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 6,
+          "x0": 378.141772,
+          "x1": 405.1074385
+        },
+        "Rate": {
+          "mapped_to": "rate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "rate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 7,
+          "x0": 405.1074385,
+          "x1": 440.10973950000005
+        },
+        "Amount": {
+          "mapped_to": "amount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "amount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 8,
+          "x0": 440.10973950000005,
+          "x1": 486.017284
+        },
+        "GST": {
+          "mapped_to": "gstPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "gstPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 9,
+          "x0": 486.017284,
+          "x1": 504.946315
+        },
+        "Dis": {
+          "mapped_to": "discountPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "discountPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 10,
+          "x0": 504.946315,
+          "x1": 521.7738385
+        },
+        "MFG": {
+          "mapped_to": "company",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "company",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 11,
+          "x0": 521.7738385,
+          "x1": 542.9888550000001
+        },
+        "HSN": {
+          "mapped_to": "hsnCode",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "hsnCode",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 12,
+          "x0": 542.9888550000001,
+          "x1": 586.527300507
+        }
+      }
+    },
+    {
+      "filename": "Sunil_Medicare_Sample_Invoice.pdf",
+      "sha256": "48cfe98fcdce1509f8165c4bd7fd3f96bb7e127b63885267b325c3827fb471b5",
+      "sha_verified": true,
+      "supplier_name": "SUNIL MEDICARE",
+      "expected_rows": 18,
+      "p12_rows": 18,
+      "p13_rows": 18,
+      "p12_decision": "REVIEW_REQUIRED",
+      "p13_decision": "REVIEW_REQUIRED",
+      "p12_confidence": 80.7,
+      "p13_confidence": 79.5,
+      "mappings": {
+        "S.": {
+          "mapped_to": null,
+          "status": "unresolved",
+          "confidence": 0.0,
+          "candidates": [],
+          "evidence": [],
+          "col_idx": 0,
+          "x0": 0.0,
+          "x1": 12.047245
+        },
+        "Qty": {
+          "mapped_to": "quantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "quantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 1,
+          "x0": 12.047245,
+          "x1": 39.073915
+        },
+        "Free": {
+          "mapped_to": "freeQuantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "freeQuantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 2,
+          "x0": 39.073915,
+          "x1": 66.93413000000001
+        },
+        "Mfr": {
+          "mapped_to": "company",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "company",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 3,
+          "x0": 66.93413000000001,
+          "x1": 108.36033
+        },
+        "Pack": {
+          "mapped_to": "pack",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "pack",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 4,
+          "x0": 108.36033,
+          "x1": 162.21759
+        },
+        "ProductName": {
+          "mapped_to": "itemName",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "itemName",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 5,
+          "x0": 162.21759,
+          "x1": 255.71639
+        },
+        "Batch": {
+          "mapped_to": "batchNo",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "batchNo",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 6,
+          "x0": 255.71639,
+          "x1": 328.43264
+        },
+        "Exp": {
+          "mapped_to": "expiryDate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "expiryDate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 7,
+          "x0": 328.43264,
+          "x1": 366.39094
+        },
+        "HSN": {
+          "mapped_to": "hsnCode",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "hsnCode",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 8,
+          "x0": 366.39094,
+          "x1": 416.53198999999995
+        },
+        "MRP": {
+          "mapped_to": "mrp",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "mrp",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 9,
+          "x0": 416.53198999999995,
+          "x1": 466.37899000000004
+        },
+        "Rate": {
+          "mapped_to": "rate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "rate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 10,
+          "x0": 466.37899000000004,
+          "x1": 523.04024
+        },
+        "DIS%": {
+          "mapped_to": "discountPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "discountPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 11,
+          "x0": 523.04024,
+          "x1": 563.7524900000001
+        },
+        "Amount": {
+          "mapped_to": "amount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "amount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 12,
+          "x0": 563.7524900000001,
+          "x1": 601.5545400000001
+        },
+        "Disc": {
+          "mapped_to": "discountPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "discountPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 13,
+          "x0": 601.5545400000001,
+          "x1": 629.77854
+        },
+        "Amt": {
+          "mapped_to": null,
+          "status": "unresolved",
+          "confidence": 0.0,
+          "candidates": [],
+          "evidence": [],
+          "col_idx": 14,
+          "x0": 629.77854,
+          "x1": 671.4689900000001
+        },
+        "Taxable": {
+          "mapped_to": "taxableAmount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "taxableAmount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 15,
+          "x0": 671.4689900000001,
+          "x1": 718.6307899999999
+        },
+        "GST%": {
+          "mapped_to": "gstPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "gstPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 16,
+          "x0": 718.6307899999999,
+          "x1": 760.9553900000001
+        },
+        "GST Amt": {
+          "mapped_to": "amount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "amount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 17,
+          "x0": 760.9553900000001,
+          "x1": 801.81989
+        },
+        "Net": {
+          "mapped_to": "netAmount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "netAmount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 18,
+          "x0": 801.81989,
+          "x1": 841.8898
+        }
+      }
+    },
+    {
+      "filename": "invoice (1).pdf",
+      "sha256": "ae83061e055990bd3a533668b554570491e80f967c10490c72b227192c77ab0d",
+      "sha_verified": true,
+      "supplier_name": "SRI HARSHA PHARMA",
+      "expected_rows": 40,
+      "p12_rows": 40,
+      "p13_rows": 39,
+      "p12_decision": "REVIEW_REQUIRED",
+      "p13_decision": "AUTO_ACCEPT",
+      "p12_confidence": 80.6,
+      "p13_confidence": 96.4,
+      "mappings": {
+        "S.": {
+          "mapped_to": null,
+          "status": "unresolved",
+          "confidence": 0.0,
+          "candidates": [],
+          "evidence": [],
+          "col_idx": 0,
+          "x0": 19.11,
+          "x1": 44.498
+        },
+        "Qty": {
+          "mapped_to": "quantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "quantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 1,
+          "x0": 44.498,
+          "x1": 79.29799999999999
+        },
+        "Free": {
+          "mapped_to": "freeQuantity",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "freeQuantity",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 2,
+          "x0": 79.29799999999999,
+          "x1": 111.41
+        },
+        "Mfr": {
+          "mapped_to": "company",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "company",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 3,
+          "x0": 111.41,
+          "x1": 140.018
+        },
+        "Pack": {
+          "mapped_to": "pack",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "pack",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 4,
+          "x0": 140.018,
+          "x1": 176.33
+        },
+        "ProductName": {
+          "mapped_to": "itemName",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "itemName",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 5,
+          "x0": 176.33,
+          "x1": 315.1459999999998
+        },
+        "Batch": {
+          "mapped_to": "batchNo",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "batchNo",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 6,
+          "x0": 315.1459999999998,
+          "x1": 432.443
+        },
+        "Exp": {
+          "mapped_to": "expiryDate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "expiryDate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 7,
+          "x0": 432.443,
+          "x1": 458.24999999999943
+        },
+        "HSN": {
+          "mapped_to": "hsnCode",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "hsnCode",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 8,
+          "x0": 458.24999999999943,
+          "x1": 504.456
+        },
+        "M.R.P": {
+          "mapped_to": "mrp",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "mrp",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 9,
+          "x0": 504.456,
+          "x1": 552.447
+        },
+        "Rate": {
+          "mapped_to": "rate",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "rate",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 10,
+          "x0": 552.447,
+          "x1": 600.825
+        },
+        "DIS": {
+          "mapped_to": "discountPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "discountPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 11,
+          "x0": 600.825,
+          "x1": 638.328
+        },
+        "SGST": {
+          "mapped_to": "sgstPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "sgstPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 12,
+          "x0": 638.328,
+          "x1": 669.541
+        },
+        "CGST": {
+          "mapped_to": "cgstPercent",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "cgstPercent",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 13,
+          "x0": 669.541,
+          "x1": 708.577999999999
+        },
+        "Amount": {
+          "mapped_to": "amount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "amount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 14,
+          "x0": 708.577999999999,
+          "x1": 757.441999999999
+        },
+        "Net": {
+          "mapped_to": "netAmount",
+          "status": "known_header",
+          "confidence": 100.0,
+          "candidates": [
+            {
+              "field": "netAmount",
+              "score": 1.0,
+              "evidence": [
+                "Explicit header matched canonical alias"
+              ]
+            }
+          ],
+          "evidence": [
+            "Explicit header matched canonical alias"
+          ],
+          "col_idx": 15,
+          "x0": 757.441999999999,
+          "x1": 825.24
+        }
+      }
+    }
+  ]
+}
