@@ -17,9 +17,11 @@
 
 | Component | File Path | Core Responsibility |
 |---|---|---|
-| **Extraction Engine** | [`extractor.py`](file:///extractor.py) | Coordinate extraction, fuzzy header matching (`rapidfuzz`), column bleeding repair, compound qty (`10+2`), row accounting, supplier layout memory. |
-| **Streamlit Web UI** | [`app.py`](file:///app.py) | Interactive purchase import UI, side-by-side PDF preview, column mapper, review session commit, batch runner. |
-| **Batch Processor** | [`batch_processor.py`](file:///batch_processor.py) | Ingests entire directories of supplier invoices with failure isolation, confidence scoring, and multi-format export. |
+| **Extraction Engine** | [`extractor.py`](file:///extractor.py) | Coordinate extraction, fuzzy header matching (`rapidfuzz`), column bleeding repair, compound qty (`10+2`), closed-form accounting solver, supplier layout memory. |
+| **Local OCR & Image Engine** | [`ocr_engine.py`](file:///ocr_engine.py) | 100% offline, zero-cost OCR (OpenCV preprocessing, CLAHE, auto-deskew, RapidOCR ONNX, scanned PDF rendering). |
+| **Formatted Excel Exporter** | [`export_engine.py`](file:///export_engine.py) | Enterprise `.xlsx` generation with pharmacy styling, currency/percentage number masks, dynamic auto-width, and live `=SUM()` formulas. |
+| **Streamlit Web UI** | [`app.py`](file:///app.py) | Interactive purchase import UI, side-by-side PDF/Image preview, column mapper, review session commit, 1-click Excel/CSV/JSON export, batch runner. |
+| **Batch Processor** | [`batch_processor.py`](file:///batch_processor.py) | Ingests entire directories of PDF & image invoices with failure isolation, confidence scoring, and multi-format export. |
 | **Storage & Persistence** | [`storage/`](file:///storage/) | SQLite database (`mediastra.db`), repositories, and JSON sync (`supplier_profiles.json`, `templates.json`). |
 | **Token Reduction Tool** | [`scripts/file_to_md.py`](file:///scripts/file_to_md.py) | Universal converter to convert PDFs, spreadsheets, and data files into token-optimized Markdown. |
 | **Agent Rules & Skills** | [`.agents/`](file:///.agents/) | Operating procedures, domain specifications ([`pharma_extractor_rules.md`](file:///.agents/rules/pharma_extractor_rules.md)), and `file-to-md` skill. |
@@ -44,6 +46,10 @@
    - Created Streamlit interface with layout override controls, real-time recalculations, and one-click layout commitment.
 6. **Phase 6: Multi-Format Markdown Converter for Token Economy**:
    - Implemented `scripts/file_to_md.py` to compress PDFs, spreadsheets, and documents into minimal-token Markdown tables when sharing files with AI assistants.
+7. **Phase 7: 100% Offline Local OCR, Closed-Form Solver & Formatted Excel Export**:
+   - Implemented `ocr_engine.py` using RapidOCR + OpenCV (zero API costs, zero LLM dependencies) for scanned bills and image uploads.
+   - Built `export_engine.py` creating formatted `.xlsx` files with live Excel formulas and auto-adjusted columns.
+   - Integrated `repair_row_accounting` closed-form solver to restore corrupted OCR digits mathematically.
 
 ---
 

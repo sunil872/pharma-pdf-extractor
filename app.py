@@ -28,6 +28,8 @@ from extractor import (
     apply_and_validate_review_corrections,
     commit_reviewed_layout_to_profile_memory,
     validate_supplier_identity_safety,
+    normalize_quantity_value,
+    tokenize_compound_quantity,
 )
 from batch_processor import (
     process_single_document,
@@ -37,6 +39,7 @@ from batch_processor import (
     BatchProcessingResult,
     DocumentProcessingResult,
 )
+from export_engine import export_to_formatted_excel
 from storage import StorageService, DEFAULT_DB_PATH
 
 st.set_page_config(page_title="MediAstra - Pharma PDF Purchase Import Engine", layout="wide")
@@ -213,14 +216,17 @@ def resolve_saved_template(templates: dict, metadata: dict):
 def first_number(val):
     if val is None:
         return None
-    text = str(val).strip()
+    text = str(val).strip().replace(",", "")
     if not text:
         return None
-    match = re.search(r"-?\d+(?:\.\d+)?", text)
+    match = re.search(r"[-+]?(?:\d+\.?\d*|\.\d+)", text)
     if not match:
         return None
     try:
-        return float(match.group(0))
+        num = float(match.group(0))
+        if num.is_integer():
+            return int(num)
+        return round(num, 4)
     except ValueError:
         return None
 
@@ -390,29 +396,30 @@ def build_clean_dataframe(headers, all_rows, confirmed_mappings=None, fallback_c
         billed_vals = []
         free_vals = []
         for val in clean_df["quantity"]:
-            billed, free = parse_compound_qty(val)
-            if billed == 0.0 and free == 0.0:
-                num = first_number(val)
-                billed = num if num is not None else None
-            billed_vals.append(billed)
-            free_vals.append(free)
+            # Handle compound quantity (e.g. 9.50+.50 -> billed: 9.5, free: 0.5)
+            tok = tokenize_compound_quantity(val)
+            if tok["is_compound"]:
+                b = normalize_quantity_value(tok["left"], is_free=False)
+                f = normalize_quantity_value(tok["right"], is_free=True, billed_val=b)
+                billed_vals.append(b)
+                free_vals.append(f)
+            else:
+                b = normalize_quantity_value(val, is_free=False)
+                billed_vals.append(b)
+                free_vals.append(None)
         clean_df["quantity"] = billed_vals
 
         if "freeQuantity" in clean_df.columns:
             merged_free = []
-            for parsed_free, existing in zip(free_vals, clean_df["freeQuantity"].tolist()):
-                if parsed_free:
+            for parsed_free, existing, billed_num in zip(free_vals, clean_df["freeQuantity"].tolist(), billed_vals):
+                if parsed_free is not None and parsed_free != 0:
                     merged_free.append(parsed_free)
                 else:
-                    _billed, free_only = parse_compound_qty(existing)
-                    if free_only:
-                        merged_free.append(free_only)
-                    else:
-                        num = first_number(existing)
-                        merged_free.append(num if num is not None else None)
+                    f = normalize_quantity_value(existing, is_free=True, billed_val=billed_num)
+                    merged_free.append(f)
             clean_df["freeQuantity"] = merged_free
         else:
-            clean_df["freeQuantity"] = free_vals
+            clean_df["freeQuantity"] = [f if (f is not None and f != 0) else None for f in free_vals]
 
     if "expiryDate" in clean_df.columns:
         clean_df["expiryDate"] = clean_df["expiryDate"].apply(standardize_date)
@@ -570,15 +577,28 @@ def sample_for_header(headers, rows, selected_label: str, limit: int = 3) -> str
 
 
 def render_pdf_preview(pdf_bytes: bytes, filename: str = "invoice.pdf"):
-    """Interactive paginated high-resolution PDF preview with < and > page navigation."""
+    """Interactive paginated high-resolution PDF and image preview."""
+    is_img = filename.lower().endswith((".png", ".jpg", ".jpeg", ".tiff", ".bmp"))
+    mime_type = "image/png" if is_img else "application/pdf"
+    
     st.download_button(
-        label="Open / Download full PDF",
+        label="Open / Download Document",
         data=pdf_bytes,
         file_name=filename,
-        mime="application/pdf",
+        mime=mime_type,
         key="pdf_preview_download",
-        help="Opens/downloads the complete multi-page invoice (works in Chrome).",
+        help="Opens/downloads the complete invoice document.",
     )
+
+    if is_img:
+        try:
+            from PIL import Image
+            img = Image.open(io.BytesIO(pdf_bytes))
+            st.image(img, use_container_width=True)
+            return
+        except Exception as exc:
+            st.warning(f"Could not render image preview: {exc}")
+            return
 
     try:
         # 1. Determine total pages using pypdfium2 (preferred for high-DPI quality) or pdfplumber
@@ -668,7 +688,11 @@ tab_single, tab_batch, tab_eval = st.tabs([
 ])
 
 with tab_single:
-    uploaded_file = st.file_uploader("Drop Distributor Invoice PDF", type=["pdf"], key="single_pdf_uploader")
+    uploaded_file = st.file_uploader(
+        "Drop Distributor Invoice (PDF / Scanned Image)",
+        type=["pdf", "png", "jpg", "jpeg", "tiff", "bmp"],
+        key="single_pdf_uploader",
+    )
 
 if uploaded_file is not None:
     pdf_bytes = uploaded_file.getvalue()
@@ -1105,32 +1129,48 @@ if uploaded_file is not None:
 
         st.dataframe(display_df, use_container_width=True, hide_index=True)
 
+        st.subheader("4. Export Purchase Data")
+        col_dl1, col_dl2, col_dl3 = st.columns(3)
+
         csv_bytes = display_df.to_csv(index=False).encode("utf-8")
-        st.download_button(
-            label="Download CSV",
-            data=csv_bytes,
-            file_name=f"{invoice_no}_purchase.csv",
-            mime="text/csv",
-        )
+        with col_dl1:
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv_bytes,
+                file_name=f"{invoice_no}_purchase.csv",
+                mime="text/csv",
+                use_container_width=True,
+            )
+
+        excel_bytes = export_to_formatted_excel(clean_df, metadata=metadata)
+        with col_dl2:
+            st.download_button(
+                label="📊 Download Formatted Excel (.xlsx)",
+                data=excel_bytes,
+                file_name=f"{invoice_no}_purchase.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+            )
+
+        payload = {
+            "invoiceMetadata": metadata,
+            "purchaseItems": clean_df.to_dict(orient="records") if not clean_df.empty else [],
+        }
+        json_bytes = json.dumps(payload, indent=2).encode("utf-8")
+        with col_dl3:
+            st.download_button(
+                label="📦 Download JSON",
+                data=json_bytes,
+                file_name=f"{invoice_no}_purchase.json",
+                mime="application/json",
+                use_container_width=True,
+            )
     else:
         clean_df = pd.DataFrame()
         st.info("No line items available to preview. Map at least Item Name to continue.")
-
-    st.subheader("4. JSON Data Contract")
-    payload = {
-        "invoiceMetadata": metadata,
-        "purchaseItems": clean_df.to_dict(orient="records") if not clean_df.empty else [],
-    }
-    json_bytes = json.dumps(payload, indent=2).encode("utf-8")
-    st.download_button(
-        label="Download JSON",
-        data=json_bytes,
-        file_name=f"{invoice_no}_purchase.json",
-        mime="application/json",
-    )
 else:
     with tab_single:
-        st.info("Upload a distributor invoice PDF to begin mapping and preview.")
+        st.info("Upload a distributor invoice (PDF / Image) to begin mapping and preview.")
 
 with tab_batch:
     st.subheader("📦 Production Batch Invoice Processing Pipeline")
@@ -1142,8 +1182,8 @@ with tab_batch:
     
     if batch_mode == "Upload Multiple PDFs":
         batch_files = st.file_uploader(
-            "Upload Batch PDF Invoices",
-            type=["pdf"],
+            "Upload Batch Invoices (PDF / Image)",
+            type=["pdf", "png", "jpg", "jpeg", "tiff", "bmp"],
             accept_multiple_files=True,
             key="batch_pdf_uploader",
         )
@@ -1226,20 +1266,30 @@ with tab_batch:
             # Export
             st.subheader("Batch Consolidated Export")
             csv_data = export_batch_results(batch_res, export_format="csv")
+            excel_data = export_batch_results(batch_res, export_format="xlsx")
             json_data = export_batch_results(batch_res, export_format="json")
 
-            c_exp1, c_exp2 = st.columns(2)
+            c_exp1, c_exp2, c_exp3 = st.columns(3)
             c_exp1.download_button(
                 label="📥 Download Consolidated CSV",
                 data=csv_data,
                 file_name=f"{batch_res.batch_id}_export.csv",
                 mime="text/csv",
+                use_container_width=True,
             )
             c_exp2.download_button(
-                label="📥 Download Consolidated JSON",
+                label="📊 Download Formatted Excel (.xlsx)",
+                data=excel_data,
+                file_name=f"{batch_res.batch_id}_export.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                use_container_width=True,
+            )
+            c_exp3.download_button(
+                label="📦 Download Consolidated JSON",
                 data=json_data,
                 file_name=f"{batch_res.batch_id}_export.json",
                 mime="application/json",
+                use_container_width=True,
             )
 
 # ------------------------------------------------------------------------------

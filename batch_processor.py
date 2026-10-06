@@ -127,6 +127,7 @@ def discover_pdf_files(
     """
     discovered = []
 
+    VALID_EXTS = (".pdf", ".png", ".jpg", ".jpeg", ".tiff", ".bmp")
     if isinstance(input_path, (list, tuple, set)):
         for item in input_path:
             discovered.extend(discover_pdf_files(str(item), recursive=recursive))
@@ -137,7 +138,7 @@ def discover_pdf_files(
         return []
 
     if os.path.isfile(path_str):
-        if path_str.lower().endswith(".pdf"):
+        if path_str.lower().endswith(VALID_EXTS):
             return [os.path.abspath(path_str)]
         return []
 
@@ -145,11 +146,11 @@ def discover_pdf_files(
         if recursive:
             for root, _, files in os.walk(path_str):
                 for f in files:
-                    if f.lower().endswith(".pdf"):
+                    if f.lower().endswith(VALID_EXTS):
                         discovered.append(os.path.abspath(os.path.join(root, f)))
         else:
             for f in os.listdir(path_str):
-                if f.lower().endswith(".pdf"):
+                if f.lower().endswith(VALID_EXTS):
                     discovered.append(os.path.abspath(os.path.join(path_str, f)))
 
     return sorted(list(set(discovered)))
@@ -477,7 +478,17 @@ def export_batch_results(
     if not df.empty:
         df = df[ordered_cols]
 
-    if export_format.lower() == "json":
+    if export_format.lower() in ("xlsx", "excel"):
+        from export_engine import export_to_formatted_excel
+        batch_meta = {
+            "supplier_name": f"Batch Consolidated ({batch_result.total_documents} invoices)",
+            "gstin": "CONSOLIDATED",
+            "invoice_no": batch_result.batch_id,
+            "invoice_date": batch_result.start_time[:10] if batch_result.start_time else "",
+        }
+        excel_bytes = export_to_formatted_excel(df, metadata=batch_meta, output_path=output_path)
+        return excel_bytes
+    elif export_format.lower() == "json":
         json_str = df.to_json(orient="records", indent=2)
         if output_path:
             with open(output_path, "w", encoding="utf-8") as f:

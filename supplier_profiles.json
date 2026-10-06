@@ -1,5 +1,5 @@
 {
-  "version": 2463,
+  "version": 2476,
   "profiles": {
     "36BIXPR6113F1ZU": {
       "supplier_identity": "36BIXPR6113F1ZU",
@@ -848,10 +848,10 @@
       "supplier_key": "MOHIT PHARMA",
       "supplier_name": "MOHIT PHARMA",
       "gstin": null,
-      "successful_document_count": 953,
+      "successful_document_count": 962,
       "reviewed_document_count": 1,
       "failure_document_count": 0,
-      "last_seen": "2026-09-28T19:38:05.356636",
+      "last_seen": "2026-10-05T19:09:43.950556",
       "profile_confidence": 0.9,
       "layout_profiles": {
         "layout_97c3a05572717fb3": {
@@ -1063,8 +1063,8 @@
           },
           "field_reliability": {
             "quantity": {
-              "observed_count": 157,
-              "algorithm_confirmed_count": 157,
+              "observed_count": 166,
+              "algorithm_confirmed_count": 166,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -1072,8 +1072,8 @@
               "reliability_score": 1.0
             },
             "pack": {
-              "observed_count": 157,
-              "algorithm_confirmed_count": 157,
+              "observed_count": 166,
+              "algorithm_confirmed_count": 166,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -1081,8 +1081,8 @@
               "reliability_score": 1.0
             },
             "itemName": {
-              "observed_count": 157,
-              "algorithm_confirmed_count": 157,
+              "observed_count": 166,
+              "algorithm_confirmed_count": 166,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -1090,8 +1090,8 @@
               "reliability_score": 1.0
             },
             "mrp": {
-              "observed_count": 78,
-              "algorithm_confirmed_count": 78,
+              "observed_count": 87,
+              "algorithm_confirmed_count": 87,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -1099,8 +1099,8 @@
               "reliability_score": 1.0
             },
             "batchNo": {
-              "observed_count": 157,
-              "algorithm_confirmed_count": 157,
+              "observed_count": 166,
+              "algorithm_confirmed_count": 166,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -1108,8 +1108,8 @@
               "reliability_score": 1.0
             },
             "expiryDate": {
-              "observed_count": 157,
-              "algorithm_confirmed_count": 157,
+              "observed_count": 166,
+              "algorithm_confirmed_count": 166,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -1117,8 +1117,8 @@
               "reliability_score": 1.0
             },
             "hsnCode": {
-              "observed_count": 157,
-              "algorithm_confirmed_count": 157,
+              "observed_count": 166,
+              "algorithm_confirmed_count": 166,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -1126,8 +1126,8 @@
               "reliability_score": 1.0
             },
             "rate": {
-              "observed_count": 157,
-              "algorithm_confirmed_count": 157,
+              "observed_count": 166,
+              "algorithm_confirmed_count": 166,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -1135,8 +1135,8 @@
               "reliability_score": 1.0
             },
             "discountPercent": {
-              "observed_count": 157,
-              "algorithm_confirmed_count": 157,
+              "observed_count": 166,
+              "algorithm_confirmed_count": 166,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -1144,8 +1144,8 @@
               "reliability_score": 1.0
             },
             "sgstPercent": {
-              "observed_count": 78,
-              "algorithm_confirmed_count": 78,
+              "observed_count": 87,
+              "algorithm_confirmed_count": 87,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -1153,8 +1153,8 @@
               "reliability_score": 1.0
             },
             "cgstPercent": {
-              "observed_count": 157,
-              "algorithm_confirmed_count": 157,
+              "observed_count": 166,
+              "algorithm_confirmed_count": 166,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -1162,8 +1162,8 @@
               "reliability_score": 1.0
             },
             "amount": {
-              "observed_count": 157,
-              "algorithm_confirmed_count": 157,
+              "observed_count": 166,
+              "algorithm_confirmed_count": 166,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -1173,6 +1173,15 @@
             "gstPercent": {
               "observed_count": 79,
               "algorithm_confirmed_count": 79,
+              "human_confirmed_count": 0,
+              "inferred_count": 1,
+              "contradiction_count": 0,
+              "review_correction_count": 0,
+              "reliability_score": 1.0
+            },
+            "freeQuantity": {
+              "observed_count": 7,
+              "algorithm_confirmed_count": 7,
               "human_confirmed_count": 0,
               "inferred_count": 1,
               "contradiction_count": 0,
@@ -1192,12 +1201,12 @@
             "rate",
             "amount"
           ],
-          "successful_document_count": 157,
+          "successful_document_count": 166,
           "review_count": 0,
           "failure_count": 0,
           "review_history": [],
           "created_at": "2026-09-16T14:05:42.316134",
-          "last_seen": "2026-09-28T19:38:05.356636"
+          "last_seen": "2026-10-05T19:09:43.950556"
         },
         "layout_v3_d68517c5921885f3": {
           "layout_id": "layout_v3_d68517c5921885f3",
@@ -2068,10 +2077,10 @@
       "supplier_key": "SRI HARSHA PHARMA",
       "supplier_name": "SRI HARSHA PHARMA",
       "gstin": "36BIXPR6113F1ZU",
-      "successful_document_count": 267,
+      "successful_document_count": 269,
       "reviewed_document_count": 0,
       "failure_document_count": 0,
-      "last_seen": "2026-10-05T17:14:44.643700",
+      "last_seen": "2026-10-05T19:16:36.049664",
       "profile_confidence": 0.96,
       "layout_profiles": {
         "layout_v1_8791df4bb2726ab0": {
@@ -2134,8 +2143,8 @@
           },
           "field_reliability": {
             "quantity": {
-              "observed_count": 267,
-              "algorithm_confirmed_count": 267,
+              "observed_count": 269,
+              "algorithm_confirmed_count": 269,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2143,8 +2152,8 @@
               "reliability_score": 1.0
             },
             "freeQuantity": {
-              "observed_count": 258,
-              "algorithm_confirmed_count": 258,
+              "observed_count": 260,
+              "algorithm_confirmed_count": 260,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2152,8 +2161,8 @@
               "reliability_score": 1.0
             },
             "company": {
-              "observed_count": 267,
-              "algorithm_confirmed_count": 267,
+              "observed_count": 269,
+              "algorithm_confirmed_count": 269,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2161,8 +2170,8 @@
               "reliability_score": 1.0
             },
             "pack": {
-              "observed_count": 267,
-              "algorithm_confirmed_count": 267,
+              "observed_count": 269,
+              "algorithm_confirmed_count": 269,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2170,8 +2179,8 @@
               "reliability_score": 1.0
             },
             "itemName": {
-              "observed_count": 267,
-              "algorithm_confirmed_count": 267,
+              "observed_count": 269,
+              "algorithm_confirmed_count": 269,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2179,8 +2188,8 @@
               "reliability_score": 1.0
             },
             "batchNo": {
-              "observed_count": 267,
-              "algorithm_confirmed_count": 267,
+              "observed_count": 269,
+              "algorithm_confirmed_count": 269,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2188,8 +2197,8 @@
               "reliability_score": 1.0
             },
             "expiryDate": {
-              "observed_count": 267,
-              "algorithm_confirmed_count": 267,
+              "observed_count": 269,
+              "algorithm_confirmed_count": 269,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2197,8 +2206,8 @@
               "reliability_score": 1.0
             },
             "hsnCode": {
-              "observed_count": 267,
-              "algorithm_confirmed_count": 267,
+              "observed_count": 269,
+              "algorithm_confirmed_count": 269,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2206,8 +2215,8 @@
               "reliability_score": 1.0
             },
             "mrp": {
-              "observed_count": 267,
-              "algorithm_confirmed_count": 267,
+              "observed_count": 269,
+              "algorithm_confirmed_count": 269,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2215,8 +2224,8 @@
               "reliability_score": 1.0
             },
             "rate": {
-              "observed_count": 267,
-              "algorithm_confirmed_count": 267,
+              "observed_count": 269,
+              "algorithm_confirmed_count": 269,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2224,8 +2233,8 @@
               "reliability_score": 1.0
             },
             "discountPercent": {
-              "observed_count": 267,
-              "algorithm_confirmed_count": 267,
+              "observed_count": 269,
+              "algorithm_confirmed_count": 269,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2233,8 +2242,8 @@
               "reliability_score": 1.0
             },
             "sgstPercent": {
-              "observed_count": 247,
-              "algorithm_confirmed_count": 247,
+              "observed_count": 249,
+              "algorithm_confirmed_count": 249,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2242,8 +2251,8 @@
               "reliability_score": 1.0
             },
             "cgstPercent": {
-              "observed_count": 267,
-              "algorithm_confirmed_count": 267,
+              "observed_count": 269,
+              "algorithm_confirmed_count": 269,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2251,8 +2260,8 @@
               "reliability_score": 1.0
             },
             "amount": {
-              "observed_count": 267,
-              "algorithm_confirmed_count": 267,
+              "observed_count": 269,
+              "algorithm_confirmed_count": 269,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2260,8 +2269,8 @@
               "reliability_score": 1.0
             },
             "netAmount": {
-              "observed_count": 267,
-              "algorithm_confirmed_count": 267,
+              "observed_count": 269,
+              "algorithm_confirmed_count": 269,
               "human_confirmed_count": 0,
               "inferred_count": 0,
               "contradiction_count": 0,
@@ -2290,12 +2299,12 @@
             "rate",
             "amount"
           ],
-          "successful_document_count": 267,
+          "successful_document_count": 269,
           "review_count": 0,
           "failure_count": 0,
           "review_history": [],
           "created_at": "2026-09-11T16:52:21.623736",
-          "last_seen": "2026-10-05T17:14:44.643700"
+          "last_seen": "2026-10-05T19:16:36.049664"
         }
       }
     },
@@ -2511,6 +2520,194 @@
           "review_history": [],
           "created_at": "2026-09-11T19:17:35.846923",
           "last_seen": "2026-09-11T19:21:02.833336"
+        }
+      }
+    },
+    "BALAJI PHARMA DISTRIBUTORS": {
+      "supplier_identity": "BALAJI PHARMA DISTRIBUTORS",
+      "supplier_key": "BALAJI PHARMA DISTRIBUTORS",
+      "supplier_name": "BALAJI PHARMA DISTRIBUTORS",
+      "gstin": "36AAEFB0807C1Z5",
+      "successful_document_count": 2,
+      "reviewed_document_count": 0,
+      "failure_document_count": 0,
+      "last_seen": "2026-10-05T19:24:29.158855",
+      "profile_confidence": 0.98,
+      "layout_profiles": {
+        "layout_v1_6eb99b4fc1088a4e": {
+          "layout_id": "layout_v1_6eb99b4fc1088a4e",
+          "layout_signature": "6eb99b4fc1088a4e",
+          "header_sequence": [
+            "HsnCode",
+            "ProductName",
+            "Pack",
+            "mfg",
+            "Batch",
+            "Expriy",
+            "Qty",
+            "Free",
+            "M.R.P",
+            "Rate",
+            "Amount",
+            "GST%"
+          ],
+          "logical_column_count": 12,
+          "relative_column_positions": [
+            0.0,
+            0.086,
+            0.288,
+            0.337,
+            0.384,
+            0.475,
+            0.573,
+            0.62,
+            0.663,
+            0.733,
+            0.8,
+            0.875
+          ],
+          "semantic_mapping": {
+            "HsnCode": "hsnCode",
+            "ProductName": "itemName",
+            "Pack": "pack",
+            "mfg": "company",
+            "Batch": "batchNo",
+            "Expriy": "expiryDate",
+            "Qty": "quantity",
+            "Free": "freeQuantity",
+            "M.R.P": "mrp",
+            "Rate": "rate",
+            "Amount": "amount",
+            "GST%": "gstPercent"
+          },
+          "field_reliability": {
+            "hsnCode": {
+              "observed_count": 2,
+              "algorithm_confirmed_count": 2,
+              "human_confirmed_count": 0,
+              "inferred_count": 0,
+              "contradiction_count": 0,
+              "review_correction_count": 0,
+              "reliability_score": 1.0
+            },
+            "itemName": {
+              "observed_count": 2,
+              "algorithm_confirmed_count": 2,
+              "human_confirmed_count": 0,
+              "inferred_count": 0,
+              "contradiction_count": 0,
+              "review_correction_count": 0,
+              "reliability_score": 1.0
+            },
+            "pack": {
+              "observed_count": 2,
+              "algorithm_confirmed_count": 2,
+              "human_confirmed_count": 0,
+              "inferred_count": 0,
+              "contradiction_count": 0,
+              "review_correction_count": 0,
+              "reliability_score": 1.0
+            },
+            "company": {
+              "observed_count": 2,
+              "algorithm_confirmed_count": 2,
+              "human_confirmed_count": 0,
+              "inferred_count": 0,
+              "contradiction_count": 0,
+              "review_correction_count": 0,
+              "reliability_score": 1.0
+            },
+            "batchNo": {
+              "observed_count": 2,
+              "algorithm_confirmed_count": 2,
+              "human_confirmed_count": 0,
+              "inferred_count": 0,
+              "contradiction_count": 0,
+              "review_correction_count": 0,
+              "reliability_score": 1.0
+            },
+            "expiryDate": {
+              "observed_count": 2,
+              "algorithm_confirmed_count": 2,
+              "human_confirmed_count": 0,
+              "inferred_count": 0,
+              "contradiction_count": 0,
+              "review_correction_count": 0,
+              "reliability_score": 1.0
+            },
+            "quantity": {
+              "observed_count": 2,
+              "algorithm_confirmed_count": 2,
+              "human_confirmed_count": 0,
+              "inferred_count": 0,
+              "contradiction_count": 0,
+              "review_correction_count": 0,
+              "reliability_score": 1.0
+            },
+            "freeQuantity": {
+              "observed_count": 2,
+              "algorithm_confirmed_count": 2,
+              "human_confirmed_count": 0,
+              "inferred_count": 0,
+              "contradiction_count": 0,
+              "review_correction_count": 0,
+              "reliability_score": 1.0
+            },
+            "mrp": {
+              "observed_count": 2,
+              "algorithm_confirmed_count": 2,
+              "human_confirmed_count": 0,
+              "inferred_count": 0,
+              "contradiction_count": 0,
+              "review_correction_count": 0,
+              "reliability_score": 1.0
+            },
+            "rate": {
+              "observed_count": 2,
+              "algorithm_confirmed_count": 2,
+              "human_confirmed_count": 0,
+              "inferred_count": 0,
+              "contradiction_count": 0,
+              "review_correction_count": 0,
+              "reliability_score": 1.0
+            },
+            "amount": {
+              "observed_count": 2,
+              "algorithm_confirmed_count": 2,
+              "human_confirmed_count": 0,
+              "inferred_count": 0,
+              "contradiction_count": 0,
+              "review_correction_count": 0,
+              "reliability_score": 1.0
+            },
+            "gstPercent": {
+              "observed_count": 2,
+              "algorithm_confirmed_count": 2,
+              "human_confirmed_count": 0,
+              "inferred_count": 0,
+              "contradiction_count": 0,
+              "review_correction_count": 0,
+              "reliability_score": 1.0
+            }
+          },
+          "multi_value_patterns": {},
+          "known_optional_fields": [
+            "hsnCode",
+            "discountPercent",
+            "freeQuantity"
+          ],
+          "known_required_fields": [
+            "itemName",
+            "quantity",
+            "rate",
+            "amount"
+          ],
+          "successful_document_count": 2,
+          "review_count": 0,
+          "failure_count": 0,
+          "review_history": [],
+          "created_at": "2026-10-05T19:21:40.905858",
+          "last_seen": "2026-10-05T19:24:29.158855"
         }
       }
     }

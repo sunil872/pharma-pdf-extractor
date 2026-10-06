@@ -8,7 +8,13 @@ import pdfplumber
 import pandas as pd
 from rapidfuzz import process, fuzz
 
+try:
+    import ocr_engine
+except ImportError:
+    ocr_engine = None
+
 logger = logging.getLogger(__name__)
+
 
 
 # Canonical system columns used by the purchase import engine.
@@ -2524,6 +2530,7 @@ def _to_float(val, default=None):
     Convert a value to float while distinguishing:
     - None / '' -> default (typically None, meaning missing)
     - '0' / 0 / 0.0 -> 0.0 (explicit zero)
+    - '.500' / '0.50' -> 0.5 (handles leading decimal dots)
     - '123.45' -> 123.45 (extracted number)
     - unparseable string -> default
     """
@@ -2540,13 +2547,54 @@ def _to_float(val, default=None):
     text = str(val).strip().replace(",", "")
     if not text:
         return default
-    match = re.search(r"-?\d+(?:\.\d+)?", text)
+    match = re.search(r"[-+]?(?:\d+\.?\d*|\.\d+)", text)
     if not match:
         return default
     try:
         return float(match.group(0))
     except ValueError:
         return default
+
+
+def normalize_quantity_value(val, is_free: bool = False, billed_val: float = None):
+    """
+    Standardizes quantity and freeQuantity values into clean, minimal numbers:
+    - Strips noisy trailing zeros: 6.500 -> 6.5, 8.50 -> 8.5, 2.00 -> 2
+    - Handles leading dot decimals: .500 -> 0.5, .600 -> 0.6, .70 -> 0.7
+    - Handles faint/missing dot anomalies on free quantities (e.g. 500 when billed is 2.5 -> 0.5)
+    """
+    if val is None or val == "" or str(val).strip().lower() in ("none", "nan", "null"):
+        return None
+    text = str(val).strip().replace(",", "")
+    if not text:
+        return None
+
+    # Check for compound quantity token first
+    tok = tokenize_compound_quantity(text)
+    if tok["is_compound"]:
+        target = tok["right"] if is_free else tok["left"]
+        if target is None:
+            return None
+        return int(target) if target.is_integer() else round(target, 4)
+
+    match = re.search(r"[-+]?(?:\d+\.?\d*|\.\d+)", text)
+    if not match:
+        return None
+    try:
+        num = float(match.group(0))
+        # Anomaly guard: freeQuantity printed as 500/600/700 for .500/.600/.700
+        if is_free and num in (100.0, 200.0, 250.0, 300.0, 400.0, 500.0, 600.0, 700.0, 750.0, 800.0, 900.0):
+            if billed_val is not None and billed_val < 50:
+                num = num / 1000.0
+        elif is_free and num >= 100 and "." not in text and (billed_val is not None and billed_val < 50):
+            num = num / 1000.0
+
+        if num.is_integer():
+            return int(num)
+        return round(num, 4)
+    except ValueError:
+        return None
+
 
 
 def split_leading_serial_product_token(text):
@@ -3258,10 +3306,39 @@ def extract_supplier_name(text: str):
 def extract_invoice_metadata(pdf_path):
     if hasattr(pdf_path, "seek"):
         pdf_path.seek(0)
-    with pdfplumber.open(pdf_path) as pdf:
-        first_page = pdf.pages[0]
-        text = first_page.extract_text() or ""
-        supplier_info = detect_supplier_name_from_page(first_page)
+
+    is_image = False
+    if isinstance(pdf_path, (str, bytes, os.PathLike)):
+        str_path = str(pdf_path).lower()
+        if str_path.endswith((".png", ".jpg", ".jpeg", ".tiff", ".bmp")):
+            is_image = True
+
+    text = ""
+    supplier_info = {}
+
+    if not is_image:
+        try:
+            with pdfplumber.open(pdf_path) as pdf:
+                if pdf.pages:
+                    first_page = pdf.pages[0]
+                    text = first_page.extract_text() or ""
+                    supplier_info = detect_supplier_name_from_page(first_page)
+        except Exception:
+            is_image = True
+
+    # Fallback to OCR if text is sparse or input is an image
+    if (is_image or len(text.strip()) < 30) and ocr_engine is not None:
+        try:
+            if is_image:
+                text = ocr_engine.extract_text_from_image(pdf_path)
+            elif ocr_engine.fitz is not None:
+                imgs = ocr_engine.render_pdf_to_images(pdf_path)
+                if imgs:
+                    text = ocr_engine.extract_text_from_image(imgs[0])
+            if text:
+                supplier_info = extract_supplier_name_from_text(text)
+        except Exception as e:
+            logger.warning(f"OCR metadata fallback exception: {e}")
 
     gstin_match = re.search(
         r"\b\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]\b",
@@ -3277,9 +3354,9 @@ def extract_invoice_metadata(pdf_path):
     )
 
     return {
-        "supplier_name": supplier_info.get("detected_name"),
-        "supplier_confidence": supplier_info.get("confidence"),
-        "supplier_is_editable": supplier_info.get("is_editable", True),
+        "supplier_name": supplier_info.get("detected_name") if isinstance(supplier_info, dict) else (supplier_info or None),
+        "supplier_confidence": supplier_info.get("confidence") if isinstance(supplier_info, dict) else (0.8 if supplier_info else None),
+        "supplier_is_editable": supplier_info.get("is_editable", True) if isinstance(supplier_info, dict) else True,
         "supplier_gstin": gstin_match.group(0) if gstin_match else None,
         "invoice_number": invoice_number_match.group(1) if invoice_number_match else None,
         "invoice_date": invoice_date_match.group(1) if invoice_date_match else None,
@@ -4887,19 +4964,179 @@ def extract_coordinate_table(page, saved_template=None, expected_cols=None, debu
 
     return headers, genuine_rows, conf, debug_info
 
-    return headers, genuine_rows, conf, debug_info
+
+def repair_row_accounting(row: list, headers: list, column_mappings: dict) -> list:
+    """
+    Closed-Form Accounting Constraint Solver:
+    Validates and repairs row-level commercial values using pharma accounting invariants:
+    - Amount = Qty * Rate
+    - Taxable = Amount * (1 - Disc% / 100)
+    - Net = Taxable * (1 + GST% / 100)
+    If OCR misreads or misses one numeric field, solves the equation to restore precision.
+    """
+    if not row or not headers:
+        return row
+
+    field_indices = {}
+    for h, info in column_mappings.items():
+        m = info.get("mapped_to") if isinstance(info, dict) else info
+        if m and h in headers:
+            field_indices[m] = headers.index(h)
+
+    q_idx = field_indices.get("quantity")
+    r_idx = field_indices.get("rate")
+    a_idx = field_indices.get("amount")
+    d_idx = field_indices.get("discountPercent")
+    t_idx = field_indices.get("taxableAmount")
+    g_idx = field_indices.get("gstPercent")
+    n_idx = field_indices.get("netAmount")
+
+    row_copy = list(row)
+    
+    q = _to_float(row_copy[q_idx]) if (q_idx is not None and q_idx < len(row_copy)) else None
+    r = _to_float(row_copy[r_idx]) if (r_idx is not None and r_idx < len(row_copy)) else None
+    a = _to_float(row_copy[a_idx]) if (a_idx is not None and a_idx < len(row_copy)) else None
+    d = _to_float(row_copy[d_idx]) if (d_idx is not None and d_idx < len(row_copy)) else 0.0
+    t = _to_float(row_copy[t_idx]) if (t_idx is not None and t_idx < len(row_copy)) else None
+    g = _to_float(row_copy[g_idx]) if (g_idx is not None and g_idx < len(row_copy)) else 0.0
+    n = _to_float(row_copy[n_idx]) if (n_idx is not None and n_idx < len(row_copy)) else None
+
+    # 1. Gross Amount (Qty * Rate)
+    if (a is None or a <= 0) and q and r and q > 0 and r > 0:
+        a = round(q * r, 2)
+        if a_idx is not None and a_idx < len(row_copy):
+            row_copy[a_idx] = f"{a:.2f}"
+    elif (r is None or r <= 0) and q and a and q > 0 and a > 0:
+        r = round(a / q, 2)
+        if r_idx is not None and r_idx < len(row_copy):
+            row_copy[r_idx] = f"{r:.2f}"
+
+    # 2. Taxable Amount (Amount - Discount)
+    if d is None:
+        d = 0.0
+    if (t is None or t <= 0) and a is not None and a > 0:
+        t = round(a * (1.0 - d / 100.0), 2)
+        if t_idx is not None and t_idx < len(row_copy):
+            row_copy[t_idx] = f"{t:.2f}"
+    elif (d == 0.0 or d is None) and a and t and a > t > 0:
+        d = round(((a - t) / a) * 100.0, 2)
+        if d_idx is not None and d_idx < len(row_copy):
+            row_copy[d_idx] = f"{d:.2f}"
+
+    # 3. Net Amount (Taxable + GST)
+    if g is None:
+        g = 0.0
+    if (n is None or n <= 0) and t is not None and t > 0:
+        n = round(t * (1.0 + g / 100.0), 2)
+        if n_idx is not None and n_idx < len(row_copy):
+            row_copy[n_idx] = f"{n:.2f}"
+
+    return row_copy
+
+
+def extract_image_or_scanned_table(file_input, saved_template: dict = None, debug: bool = False):
+    """
+    Extracts line-item table from image files or scanned PDFs using OCR spatial line reconstruction.
+    """
+    if ocr_engine is None:
+        return {}, [], {}, []
+
+    metadata = extract_invoice_metadata(file_input)
+    
+    images = []
+    is_image = False
+    if isinstance(file_input, (str, bytes, os.PathLike)):
+        str_p = str(file_input).lower()
+        if str_p.endswith((".png", ".jpg", ".jpeg", ".tiff", ".bmp")):
+            try:
+                images = [ocr_engine.load_image_to_pil(file_input)]
+                is_image = True
+            except Exception:
+                pass
+
+    if not is_image:
+        try:
+            images = ocr_engine.render_pdf_to_images(file_input)
+        except Exception as e:
+            logger.warning(f"Failed to render scanned PDF pages: {e}")
+            return metadata, [], {}, []
+
+    headers = []
+    all_rows = []
+    
+    for img in images:
+        try:
+            ocr_df = ocr_engine.extract_ocr_dataframe_from_image(img)
+            lines = ocr_engine.reconstruct_lines_from_ocr(ocr_df)
+            
+            for line_tokens in lines:
+                if not line_tokens or len(line_tokens) < 3:
+                    continue
+                # Check if this line is header row
+                if not headers and _is_valid_header_row(line_tokens, saved_template):
+                    headers = line_tokens
+                    continue
+                
+                if headers:
+                    if len(line_tokens) < len(headers):
+                        row_cells = line_tokens + [""] * (len(headers) - len(line_tokens))
+                    else:
+                        row_cells = line_tokens[:len(headers)]
+                    
+                    if _is_footer_row(row_cells) or _is_letterhead_row(row_cells):
+                        continue
+                    if _is_genuine_product_row(row_cells):
+                        all_rows.append(row_cells)
+        except Exception as e:
+            logger.warning(f"Error extracting table from image page: {e}")
+
+    column_mappings = infer_unresolved_column_semantics(
+        headers,
+        all_rows,
+        columns_coord_info=None,
+        saved_template=saved_template,
+        debug=debug,
+    )
+    
+    # Repair accounting across all extracted rows
+    all_rows = [repair_row_accounting(r, headers, column_mappings) for r in all_rows]
+
+    validation_results = compute_global_validation_and_confidence(
+        headers,
+        None,
+        column_mappings,
+        all_rows,
+        saved_template=saved_template,
+        metadata=metadata,
+    )
+    column_mappings = validation_results["resolved_mappings"]
+    metadata["validation"] = validation_results
+    metadata["confidence"] = validation_results["document_confidence"]
+    metadata["classification"] = validation_results["classification"]
+    
+    return metadata, headers, column_mappings, all_rows
 
 
 def extract_pdf_table(pdf_file, saved_template: dict = None, use_coordinates: bool = True, debug: bool = False):
     """
-    Extract line-item tables from every page of an invoice PDF.
+    Extract line-item tables from every page of an invoice PDF or Image.
 
     Coordinates-First Pipeline:
+    - Checks for image files or scanned PDFs and routes to OCR if detected.
     - Runs coordinate-aware word extraction on each page.
     - If coordinate extraction finds clear headers and product rows (conf >= 0.50), uses it.
     - Otherwise gracefully falls back to multi-pass pdfplumber table extraction.
-    - Infers semantic column mappings globally across all product rows.
+    - Automatically repairs row accounting with closed-form constraint solver.
     """
+    is_image = False
+    if isinstance(pdf_file, (str, bytes, os.PathLike)):
+        str_p = str(pdf_file).lower()
+        if str_p.endswith((".png", ".jpg", ".jpeg", ".tiff", ".bmp")):
+            is_image = True
+
+    if is_image:
+        return extract_image_or_scanned_table(pdf_file, saved_template=saved_template, debug=debug)
+
     metadata = extract_invoice_metadata(pdf_file)
 
     headers = []
@@ -4912,9 +5149,16 @@ def extract_pdf_table(pdf_file, saved_template: dict = None, use_coordinates: bo
     if hasattr(pdf_file, "seek"):
         pdf_file.seek(0)
 
-    with pdfplumber.open(pdf_file) as pdf:
+    try:
+        pdf_ctx = pdfplumber.open(pdf_file)
+    except Exception:
+        # Fallback to OCR for non-standard or image formats
+        return extract_image_or_scanned_table(pdf_file, saved_template=saved_template, debug=debug)
+
+    with pdf_ctx as pdf:
         if not pdf.pages:
             return metadata, [], {}, []
+
 
         for page_idx, page in enumerate(pdf.pages):
             used_coordinates = False
@@ -5064,8 +5308,9 @@ def extract_pdf_table(pdf_file, saved_template: dict = None, use_coordinates: bo
     all_rows, sn_product_prov = reconstruct_serial_glued_product_names(
         headers, all_rows, column_mappings=column_mappings
     )
-    if sn_product_prov:
-        metadata["serial_product_reconstruction"] = sn_product_prov
+    # --- 3c. Closed-Form Mathematical Constraint Solver & Accounting Repair ---
+    if headers and column_mappings and all_rows:
+        all_rows = [repair_row_accounting(r, headers, column_mappings) for r in all_rows]
 
     # --- 4. Prompt 6: Global Validation, Reconciliation & Confidence Engine ---
     validation_results = compute_global_validation_and_confidence(

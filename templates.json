@@ -136,5 +136,19 @@
     "GST": "gstPercent",
     "NetAmount": "netAmount",
     "HSN": "hsnCode"
+  },
+  "BALAJI PHARMA DISTRIBUTORS": {
+    "HsnCode": "hsnCode",
+    "ProductName": "itemName",
+    "Pack": "pack",
+    "mfg": "company",
+    "Batch": "batchNo",
+    "Expriy": "expiryDate",
+    "Qty": "quantity",
+    "Free": "freeQuantity",
+    "M.R.P": "mrp",
+    "Rate": "rate",
+    "Amount": "amount",
+    "GST%": "gstPercent"
   }
 }
