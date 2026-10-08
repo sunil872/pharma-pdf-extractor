@@ -4,6 +4,7 @@ MediAstra Pharma PDF Purchase Import Engine - Storage Service and Repositories
 import json
 import logging
 import re
+from contextlib import contextmanager
 from datetime import datetime
 from typing import Optional, List, Dict, Any, Tuple
 
@@ -15,6 +16,10 @@ from .models import (
     ExtractionRun,
     ReviewSessionRecord,
     AuditEvent,
+    StockInventoryItem,
+    StockMovement,
+    PharmacyMasterItem,
+    ProductAlias,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,8 +41,14 @@ class StorageService:
         self.db_path = db_path
         init_db(self.db_path)
 
+    @contextmanager
     def get_connection(self):
-        return get_db_connection(self.db_path)
+        conn = get_db_connection(self.db_path)
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     # --------------------------------------------------------------------------
     # 1. SUPPLIER REPOSITORY METHODS
@@ -162,6 +173,38 @@ class StorageService:
                         updated_at=row["updated_at"],
                     )
         return None
+
+    def get_or_create_supplier(self, supplier_name: str, gstin: Optional[str] = None) -> Supplier:
+        key = gstin or supplier_name or "UNKNOWN"
+        existing = self.find_supplier_by_identity(key, gstin=gstin, name=supplier_name)
+        if existing:
+            return existing
+
+        now_iso = datetime.now().isoformat()
+        norm_name = clean_text_helper(supplier_name).upper()
+        clean_gstin = re.sub(r"[^A-Z0-9]", "", str(gstin).upper().strip()) if gstin else None
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                INSERT INTO suppliers (
+                    supplier_key, supplier_name, gstin, normalized_name,
+                    identity_status, profile_version, profile_confidence,
+                    successful_document_count, reviewed_document_count, failure_document_count,
+                    is_active, last_seen, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, 'VERIFIED', 1, 1.0, 0, 0, 0, 1, ?, ?, ?);
+            """, (key, supplier_name, clean_gstin, norm_name, now_iso, now_iso, now_iso))
+            sup_id = cursor.lastrowid
+            return Supplier(
+                id=sup_id,
+                supplier_key=key,
+                supplier_name=supplier_name,
+                gstin=clean_gstin,
+                normalized_name=norm_name,
+                identity_status="VERIFIED",
+                created_at=now_iso,
+                updated_at=now_iso,
+            )
 
     # --------------------------------------------------------------------------
     # 2. LAYOUT PROFILE REPOSITORY METHODS
@@ -849,3 +892,453 @@ class StorageService:
                     created_at=row["created_at"],
                 ))
         return events
+
+    # --------------------------------------------------------------------------
+    # 8. STOCK INVENTORY & BATCH MASTER REPOSITORY METHODS
+    # --------------------------------------------------------------------------
+
+    def ingest_stock_payload(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Atomically updates the local/cloud pharmacy stock inventory and records stock movements
+        from a canonical invoice payload (handling billed + free quantities and return deductions).
+        """
+        supplier_info = payload.get("supplier", {})
+        invoice_info = payload.get("invoice", {})
+        stock_items = payload.get("stock_update_items", [])
+        returns = payload.get("returns_adjusted", [])
+
+        supplier_name = supplier_info.get("name") or "UNKNOWN"
+        supplier_gstin = supplier_info.get("gstin")
+        invoice_no = invoice_info.get("invoice_no") or "UNKNOWN"
+        invoice_date = invoice_info.get("invoice_date") or datetime.now().strftime("%Y-%m-%d")
+        now_iso = datetime.now().isoformat()
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            
+            # Find supplier ID if present
+            supplier_id = None
+            if supplier_gstin:
+                cursor.execute("SELECT id FROM suppliers WHERE gstin = ?;", (supplier_gstin,))
+                sup_row = cursor.fetchone()
+                if sup_row:
+                    supplier_id = sup_row["id"]
+
+            items_updated = 0
+            total_stock_added = 0.0
+
+            for it in stock_items:
+                prod_name = clean_text_helper(it.get("product_name") or "")
+                if not prod_name:
+                    continue
+
+                pack = clean_text_helper(it.get("pack") or "")
+                batch_no = clean_text_helper(it.get("batch_no") or "")
+                exp_date = clean_text_helper(it.get("expiry_date") or "")
+                hsn = clean_text_helper(it.get("hsn_code") or "")
+                billed_qty = float(it.get("billed_quantity") or 0.0)
+                free_qty = float(it.get("free_quantity") or 0.0)
+                total_qty = float(it.get("total_received_stock") or (billed_qty + free_qty))
+                mrp = float(it.get("mrp") or 0.0)
+                ptr_rate = float(it.get("ptr_rate") or 0.0)
+                disc_pct = float(it.get("discount_percent") or 0.0)
+                gst_pct = float(it.get("gst_percent") or 0.0)
+                net_amt = float(it.get("line_net_amount") or 0.0)
+
+                # Check if item exists in stock inventory
+                cursor.execute("""
+                    SELECT id, current_stock_qty FROM stock_inventory
+                    WHERE product_name = ? AND pack = ? AND batch_no = ?;
+                """, (prod_name, pack, batch_no))
+                existing = cursor.fetchone()
+
+                if existing:
+                    item_id = existing["id"]
+                    new_stock = existing["current_stock_qty"] + total_qty
+                    cursor.execute("""
+                        UPDATE stock_inventory
+                        SET current_stock_qty = ?,
+                            mrp = ?,
+                            ptr_rate = ?,
+                            discount_percent = ?,
+                            gst_percent = ?,
+                            expiry_date = ?,
+                            hsn_code = ?,
+                            supplier_id = COALESCE(?, supplier_id),
+                            supplier_name = COALESCE(?, supplier_name),
+                            last_invoice_no = ?,
+                            last_received_date = ?,
+                            updated_at = ?
+                        WHERE id = ?;
+                    """, (new_stock, mrp, ptr_rate, disc_pct, gst_pct, exp_date, hsn,
+                          supplier_id, supplier_name, invoice_no, invoice_date, now_iso, item_id))
+                else:
+                    cursor.execute("""
+                        INSERT INTO stock_inventory (
+                            product_name, pack, batch_no, expiry_date, hsn_code,
+                            current_stock_qty, mrp, ptr_rate, discount_percent, gst_percent,
+                            supplier_id, supplier_name, last_invoice_no, last_received_date,
+                            created_at, updated_at
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                    """, (prod_name, pack, batch_no, exp_date, hsn,
+                          total_qty, mrp, ptr_rate, disc_pct, gst_pct,
+                          supplier_id, supplier_name, invoice_no, invoice_date,
+                          now_iso, now_iso))
+                    item_id = cursor.lastrowid
+
+                # Record stock movement
+                cursor.execute("""
+                    INSERT INTO stock_movements (
+                        stock_item_id, invoice_no, movement_type, billed_qty, free_qty, total_qty, rate, net_amount, created_at
+                    ) VALUES (?, ?, 'PURCHASE_RECEIPT', ?, ?, ?, ?, ?, ?);
+                """, (item_id, invoice_no, billed_qty, free_qty, total_qty, ptr_rate, net_amt, now_iso))
+
+                items_updated += 1
+                total_stock_added += total_qty
+
+            # Handle return deductions
+            returns_count = 0
+            for ret in returns:
+                ret_name = clean_text_helper(ret.get("product_name") or ret.get("itemName") or "")
+                ret_batch = clean_text_helper(ret.get("batch_no") or ret.get("batchNo") or "")
+                ret_qty = float(ret.get("return_qty") or ret.get("quantity") or 0.0)
+
+                if ret_name and ret_qty > 0:
+                    cursor.execute("""
+                        SELECT id, current_stock_qty FROM stock_inventory
+                        WHERE product_name = ? AND (batch_no = ? OR ? = '');
+                    """, (ret_name, ret_batch, ret_batch))
+                    existing = cursor.fetchone()
+                    if existing:
+                        item_id = existing["id"]
+                        deducted_stock = max(0.0, existing["current_stock_qty"] - ret_qty)
+                        cursor.execute("""
+                            UPDATE stock_inventory
+                            SET current_stock_qty = ?, updated_at = ?
+                            WHERE id = ?;
+                        """, (deducted_stock, now_iso, item_id))
+                        cursor.execute("""
+                            INSERT INTO stock_movements (
+                                stock_item_id, invoice_no, movement_type, billed_qty, free_qty, total_qty, rate, net_amount, created_at
+                            ) VALUES (?, ?, 'RETURN_DEDUCTION', ?, 0, ?, 0, 0, ?);
+                        """, (item_id, invoice_no, ret_qty, -ret_qty, now_iso))
+                        returns_count += 1
+
+            return {
+                "status": "SUCCESS",
+                "invoice_no": invoice_no,
+                "items_updated": items_updated,
+                "total_stock_added": total_stock_added,
+                "returns_adjusted": returns_count,
+            }
+
+    def get_stock_inventory(self, search: Optional[str] = None, limit: int = 200) -> List[StockInventoryItem]:
+        items = []
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            if search:
+                term = f"%{clean_text_helper(search)}%"
+                cursor.execute("""
+                    SELECT * FROM stock_inventory
+                    WHERE product_name LIKE ? OR batch_no LIKE ? OR hsn_code LIKE ?
+                    ORDER BY product_name ASC LIMIT ?;
+                """, (term, term, term, limit))
+            else:
+                cursor.execute("SELECT * FROM stock_inventory ORDER BY product_name ASC LIMIT ?;", (limit,))
+            
+            for row in cursor.fetchall():
+                items.append(StockInventoryItem(
+                    id=row["id"],
+                    product_name=row["product_name"],
+                    pack=row["pack"],
+                    batch_no=row["batch_no"],
+                    expiry_date=row["expiry_date"],
+                    hsn_code=row["hsn_code"],
+                    current_stock_qty=row["current_stock_qty"],
+                    mrp=row["mrp"],
+                    ptr_rate=row["ptr_rate"],
+                    discount_percent=row["discount_percent"],
+                    gst_percent=row["gst_percent"],
+                    supplier_id=row["supplier_id"],
+                    supplier_name=row["supplier_name"],
+                    last_invoice_no=row["last_invoice_no"],
+                    last_received_date=row["last_received_date"],
+                    created_at=row["created_at"],
+                    updated_at=row["updated_at"],
+                ))
+        return items
+
+    def get_stock_movements(self, stock_item_id: Optional[int] = None, limit: int = 100) -> List[StockMovement]:
+        movements = []
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            if stock_item_id:
+                cursor.execute("SELECT * FROM stock_movements WHERE stock_item_id = ? ORDER BY id DESC LIMIT ?;", (stock_item_id, limit))
+            else:
+                cursor.execute("SELECT * FROM stock_movements ORDER BY id DESC LIMIT ?;", (limit,))
+            
+            for row in cursor.fetchall():
+                movements.append(StockMovement(
+                    id=row["id"],
+                    stock_item_id=row["stock_item_id"],
+                    invoice_no=row["invoice_no"],
+                    movement_type=row["movement_type"],
+                    billed_qty=row["billed_qty"],
+                    free_qty=row["free_qty"],
+                    total_qty=row["total_qty"],
+                    rate=row["rate"],
+                    net_amount=row["net_amount"],
+                    created_at=row["created_at"],
+                ))
+        return movements
+
+    # --------------------------------------------------------------------------
+    # 8. PHARMACY MASTER ITEMS & PRODUCT ALIAS REPOSITORIES
+    # --------------------------------------------------------------------------
+
+    def create_or_update_master_item(self, item: PharmacyMasterItem) -> PharmacyMasterItem:
+        now_iso = datetime.now().isoformat()
+        norm_name = clean_text_helper(item.item_name).upper()
+        item.normalized_name = norm_name
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM pharmacy_master_items WHERE item_code = ?;", (item.item_code,))
+            row = cursor.fetchone()
+
+            if row:
+                item_id = row["id"]
+                cursor.execute("""
+                    UPDATE pharmacy_master_items
+                    SET item_name = ?,
+                        normalized_name = ?,
+                        pack = ?,
+                        default_hsn = ?,
+                        default_gst_percent = ?,
+                        updated_at = ?
+                    WHERE id = ?;
+                """, (item.item_name, norm_name, item.pack, item.default_hsn, item.default_gst_percent, now_iso, item_id))
+                item.id = item_id
+                item.updated_at = now_iso
+            else:
+                cursor.execute("""
+                    INSERT INTO pharmacy_master_items (
+                        item_code, item_name, normalized_name, pack, default_hsn, default_gst_percent, created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+                """, (item.item_code, item.item_name, norm_name, item.pack, item.default_hsn, item.default_gst_percent, now_iso, now_iso))
+                item.id = cursor.lastrowid
+                item.created_at = now_iso
+                item.updated_at = now_iso
+        return item
+
+    def get_master_item_by_code(self, item_code: str) -> Optional[PharmacyMasterItem]:
+        if not item_code:
+            return None
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM pharmacy_master_items WHERE item_code = ?;", (item_code,))
+            row = cursor.fetchone()
+            if not row:
+                return None
+            return PharmacyMasterItem(
+                id=row["id"],
+                item_code=row["item_code"],
+                item_name=row["item_name"],
+                normalized_name=row["normalized_name"],
+                pack=row["pack"],
+                default_hsn=row["default_hsn"],
+                default_gst_percent=row["default_gst_percent"],
+                created_at=row["created_at"],
+                updated_at=row["updated_at"],
+            )
+
+    def list_master_items(self, search: Optional[str] = None, limit: int = 100) -> List[PharmacyMasterItem]:
+        items = []
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            if search:
+                term = f"%{clean_text_helper(search).upper()}%"
+                cursor.execute("""
+                    SELECT * FROM pharmacy_master_items
+                    WHERE item_code LIKE ? OR normalized_name LIKE ? OR item_name LIKE ?
+                    ORDER BY item_name ASC LIMIT ?;
+                """, (term, term, term, limit))
+            else:
+                cursor.execute("SELECT * FROM pharmacy_master_items ORDER BY item_name ASC LIMIT ?;", (limit,))
+            
+            for row in cursor.fetchall():
+                items.append(PharmacyMasterItem(
+                    id=row["id"],
+                    item_code=row["item_code"],
+                    item_name=row["item_name"],
+                    normalized_name=row["normalized_name"],
+                    pack=row["pack"],
+                    default_hsn=row["default_hsn"],
+                    default_gst_percent=row["default_gst_percent"],
+                    created_at=row["created_at"],
+                    updated_at=row["updated_at"],
+                ))
+        return items
+
+    def save_product_alias(self, alias: ProductAlias) -> ProductAlias:
+        now_iso = datetime.now().isoformat()
+        norm_alias = clean_text_helper(alias.raw_alias_text).upper()
+        alias.normalized_alias = norm_alias
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+
+            # Ensure supplier_id exists if provided
+            eff_sup_id = alias.supplier_id
+            if eff_sup_id:
+                cursor.execute("SELECT id FROM suppliers WHERE id = ?;", (eff_sup_id,))
+                if not cursor.fetchone():
+                    eff_sup_id = None
+
+            # Ensure master_item_id exists if provided
+            eff_master_id = alias.master_item_id
+            if eff_master_id:
+                cursor.execute("SELECT id FROM pharmacy_master_items WHERE id = ?;", (eff_master_id,))
+                if not cursor.fetchone():
+                    eff_master_id = None
+
+            # Check existing alias by supplier + raw_alias
+            if eff_sup_id:
+                cursor.execute("""
+                    SELECT id, match_count FROM product_aliases
+                    WHERE raw_alias_text = ? AND supplier_id = ?;
+                """, (alias.raw_alias_text, eff_sup_id))
+            else:
+                cursor.execute("""
+                    SELECT id, match_count FROM product_aliases
+                    WHERE raw_alias_text = ? AND supplier_id IS NULL;
+                """, (alias.raw_alias_text,))
+            row = cursor.fetchone()
+
+            if row:
+                alias_id = row["id"]
+                new_cnt = (row["match_count"] or 1) + 1
+                cursor.execute("""
+                    UPDATE product_aliases
+                    SET master_item_id = ?,
+                        master_item_code = ?,
+                        master_item_name = ?,
+                        match_count = ?,
+                        confidence = ?,
+                        updated_at = ?
+                    WHERE id = ?;
+                """, (eff_master_id, alias.master_item_code, alias.master_item_name, new_cnt, alias.confidence, now_iso, alias_id))
+                alias.id = alias_id
+                alias.match_count = new_cnt
+                alias.updated_at = now_iso
+            else:
+                cursor.execute("""
+                    INSERT INTO product_aliases (
+                        raw_alias_text, normalized_alias, supplier_id, master_item_id,
+                        master_item_code, master_item_name, match_count, confidence,
+                        created_at, updated_at
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                """, (alias.raw_alias_text, norm_alias, eff_sup_id, eff_master_id,
+                      alias.master_item_code, alias.master_item_name, alias.match_count, alias.confidence,
+                      now_iso, now_iso))
+                alias.id = cursor.lastrowid
+                alias.created_at = now_iso
+                alias.updated_at = now_iso
+        return alias
+
+    def find_product_alias(self, raw_alias: str, supplier_id: Optional[int] = None) -> Optional[ProductAlias]:
+        if not raw_alias:
+            return None
+        norm = clean_text_helper(raw_alias).upper()
+
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            # 1. First priority: supplier-specific exact alias
+            if supplier_id:
+                cursor.execute("""
+                    SELECT * FROM product_aliases
+                    WHERE supplier_id = ? AND (raw_alias_text = ? OR normalized_alias = ?)
+                    ORDER BY confidence DESC, match_count DESC LIMIT 1;
+                """, (supplier_id, raw_alias, norm))
+                row = cursor.fetchone()
+                if row:
+                    return self._row_to_product_alias(row)
+
+            # 2. Second priority: global alias (any supplier)
+            cursor.execute("""
+                SELECT * FROM product_aliases
+                WHERE raw_alias_text = ? OR normalized_alias = ?
+                ORDER BY match_count DESC, confidence DESC LIMIT 1;
+            """, (raw_alias, norm))
+            row = cursor.fetchone()
+            if row:
+                return self._row_to_product_alias(row)
+        return None
+
+    def _row_to_product_alias(self, row: Any) -> ProductAlias:
+        return ProductAlias(
+            id=row["id"],
+            raw_alias_text=row["raw_alias_text"],
+            normalized_alias=row["normalized_alias"],
+            supplier_id=row["supplier_id"],
+            master_item_id=row["master_item_id"],
+            master_item_code=row["master_item_code"],
+            master_item_name=row["master_item_name"],
+            match_count=row["match_count"],
+            confidence=row["confidence"],
+            created_at=row["created_at"],
+            updated_at=row["updated_at"],
+        )
+
+    def list_product_aliases(self, supplier_id: Optional[int] = None, limit: int = 200) -> List[ProductAlias]:
+        aliases = []
+        with self.get_connection() as conn:
+            cursor = conn.cursor()
+            if supplier_id:
+                cursor.execute("SELECT * FROM product_aliases WHERE supplier_id = ? ORDER BY match_count DESC LIMIT ?;", (supplier_id, limit))
+            else:
+                cursor.execute("SELECT * FROM product_aliases ORDER BY match_count DESC LIMIT ?;", (limit,))
+            
+            for row in cursor.fetchall():
+                aliases.append(self._row_to_product_alias(row))
+        return aliases
+
+    def seed_default_master_pharmacy_catalogue(self) -> int:
+        """Seeds common top Indian retail pharmacy fast-moving molecules and standard items."""
+        sample_master_drugs = [
+            ("MED-1001", "AMARYL 1MG TABLET", "1x30", "30049099", 12.0),
+            ("MED-1002", "AMARYL 2MG TABLET", "1x30", "30049099", 12.0),
+            ("MED-1003", "TELMA 40MG TABLET", "1x15", "30049099", 12.0),
+            ("MED-1004", "TELMA 80MG TABLET", "1x15", "30049099", 12.0),
+            ("MED-1005", "TELMA H TABLET", "1x15", "30049099", 12.0),
+            ("MED-1006", "PAN 40MG TABLET", "1x15", "30049099", 12.0),
+            ("MED-1007", "PAN D CAPSULE", "1x15", "30049099", 12.0),
+            ("MED-1008", "AUGMENTIN 625 DUO TABLET", "1x10", "30049099", 12.0),
+            ("MED-1009", "DOLO 650 TABLET", "1x15", "30049099", 12.0),
+            ("MED-1010", "CALPOL 650MG TABLET", "1x15", "30049099", 12.0),
+            ("MED-1011", "MONTAIR LC TABLET", "1x10", "30049099", 12.0),
+            ("MED-1012", "AZITHRAL 500 TABLET", "1x5", "30049099", 12.0),
+            ("MED-1013", "GLYCOMET 500 SR TABLET", "1x20", "30049099", 12.0),
+            ("MED-1014", "GLYCOMET GP 1 TABLET", "1x15", "30049099", 12.0),
+            ("MED-1015", "SHELCAL 500MG TABLET", "1x15", "30049099", 12.0),
+            ("MED-1016", "CLAVAM 625 TABLET", "1x10", "30049099", 12.0),
+            ("MED-1017", "GELUSIL MPS LIQUID 200ML", "200ML", "30049099", 12.0),
+            ("MED-1018", "BECOSULES CAPSULES", "1x20", "30049099", 12.0),
+            ("MED-1019", "CANDID B LOTION 30ML", "30ML", "30049099", 12.0),
+            ("MED-1020", "BETADINE 10% OINTMENT 20GM", "20GM", "30049099", 12.0),
+        ]
+        count = 0
+        for code, name, pack, hsn, gst in sample_master_drugs:
+            item = PharmacyMasterItem(
+                item_code=code,
+                item_name=name,
+                normalized_name=clean_text_helper(name).upper(),
+                pack=pack,
+                default_hsn=hsn,
+                default_gst_percent=gst,
+            )
+            self.create_or_update_master_item(item)
+            count += 1
+        return count
+
+

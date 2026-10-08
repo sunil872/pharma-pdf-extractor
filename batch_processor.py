@@ -488,6 +488,43 @@ def export_batch_results(
         }
         excel_bytes = export_to_formatted_excel(df, metadata=batch_meta, output_path=output_path)
         return excel_bytes
+    elif export_format.lower() in ("marg", "marg_csv"):
+        from export_engine import export_to_marg_csv
+        batch_meta = {
+            "supplier_name": f"Batch Consolidated ({batch_result.total_documents} invoices)",
+            "invoice_no": batch_result.batch_id,
+        }
+        return export_to_marg_csv(df, metadata=batch_meta, output_path=output_path)
+    elif export_format.lower() in ("tally", "tally_xml"):
+        from export_engine import export_to_tally_xml
+        batch_meta = {
+            "supplier_name": "Batch Invoices",
+            "invoice_no": batch_result.batch_id,
+            "invoice_date": batch_result.start_time[:10] if batch_result.start_time else "",
+        }
+        return export_to_tally_xml(df, metadata=batch_meta, output_path=output_path)
+    elif export_format.lower() in ("canonical", "cloud_json", "stock_sync"):
+        from export_engine import export_to_canonical_json
+        canonical_docs = []
+        for doc in batch_result.document_results:
+            if not include_failed and doc.status == "FAILED":
+                continue
+            doc_meta = {
+                "supplier_name": doc.supplier_name,
+                "gstin": doc.gstin,
+                "invoice_number": doc.filename,
+            }
+            canonical_docs.append(export_to_canonical_json(doc.extracted_rows, metadata=doc_meta))
+        
+        json_str = json.dumps({
+            "batch_id": batch_result.batch_id,
+            "total_documents": len(canonical_docs),
+            "documents": canonical_docs,
+        }, indent=2)
+        if output_path:
+            with open(output_path, "w", encoding="utf-8") as f:
+                f.write(json_str)
+        return json_str
     elif export_format.lower() == "json":
         json_str = df.to_json(orient="records", indent=2)
         if output_path:
@@ -501,3 +538,51 @@ def export_batch_results(
             with open(output_path, "w", encoding="utf-8") as f:
                 f.write(csv_str)
         return csv_str
+
+
+def sync_batch_to_stock_inventory(
+    batch_result: BatchProcessingResult,
+    storage_service: Optional[StorageService] = None,
+) -> Dict[str, Any]:
+    """
+    Ingests all successfully processed invoice rows from a batch job directly
+    into the pharmacy stock inventory master database.
+    """
+    if storage_service is None:
+        storage_service = StorageService()
+
+    from export_engine import export_to_canonical_json
+
+    total_invoices_synced = 0
+    total_items_updated = 0
+    total_stock_added = 0.0
+    total_returns_adjusted = 0
+
+    for doc in batch_result.document_results:
+        if doc.status == "FAILED" or not doc.extracted_rows:
+            continue
+
+        doc_meta = {
+            "supplier_name": doc.supplier_name,
+            "gstin": doc.gstin,
+            "invoice_number": doc.filename,
+            "date": batch_result.start_time[:10] if batch_result.start_time else "",
+        }
+
+        canonical_payload = export_to_canonical_json(doc.extracted_rows, metadata=doc_meta)
+        sync_res = storage_service.ingest_stock_payload(canonical_payload)
+
+        total_invoices_synced += 1
+        total_items_updated += sync_res.get("items_updated", 0)
+        total_stock_added += sync_res.get("total_stock_added", 0.0)
+        total_returns_adjusted += sync_res.get("returns_adjusted", 0)
+
+    return {
+        "status": "SUCCESS",
+        "batch_id": batch_result.batch_id,
+        "invoices_synced": total_invoices_synced,
+        "items_updated": total_items_updated,
+        "total_stock_added": total_stock_added,
+        "returns_adjusted": total_returns_adjusted,
+    }
+

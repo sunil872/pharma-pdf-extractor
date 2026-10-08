@@ -121,3 +121,70 @@ class AuditEvent:
     layout_profile_id: Optional[int] = None
     event_data: Dict[str, Any] = field(default_factory=dict)
     created_at: Optional[str] = None
+
+
+@dataclass
+class StockInventoryItem:
+    id: Optional[int] = None
+    product_name: str = ""
+    pack: str = ""
+    batch_no: str = ""
+    expiry_date: str = ""
+    hsn_code: str = ""
+    current_stock_qty: float = 0.0
+    mrp: float = 0.0
+    ptr_rate: float = 0.0
+    discount_percent: float = 0.0
+    gst_percent: float = 0.0
+    supplier_id: Optional[int] = None
+    supplier_name: Optional[str] = None
+    last_invoice_no: Optional[str] = None
+    last_received_date: Optional[str] = None
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+@dataclass
+class StockMovement:
+    id: Optional[int] = None
+    stock_item_id: int = 0
+    invoice_no: str = ""
+    movement_type: str = "PURCHASE_RECEIPT"  # PURCHASE_RECEIPT, RETURN_DEDUCTION, MANUAL_ADJUSTMENT
+    billed_qty: float = 0.0
+    free_qty: float = 0.0
+    total_qty: float = 0.0
+    rate: float = 0.0
+    net_amount: float = 0.0
+    created_at: Optional[str] = None
+
+
+@dataclass
+class PharmacyMasterItem:
+    """Standardized pharmacy master medicine entry for internal ERP mapping."""
+    id: Optional[int] = None
+    item_code: str = ""  # e.g. 'MED-1001'
+    item_name: str = ""  # e.g. 'TELMA 40MG TABLET'
+    normalized_name: str = ""  # e.g. 'TELMA 40MG'
+    pack: str = ""  # e.g. "15'S"
+    default_hsn: str = "30049099"
+    default_gst_percent: float = 12.0
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+
+@dataclass
+class ProductAlias:
+    """Supplier product description mapping to master pharmacy item code."""
+    id: Optional[int] = None
+    raw_alias_text: str = ""  # e.g. 'TELMA 40 TAB 15S'
+    normalized_alias: str = ""  # e.g. 'TELMA 40'
+    supplier_id: Optional[int] = None
+    master_item_id: Optional[int] = None
+    master_item_code: str = ""
+    master_item_name: str = ""
+    match_count: int = 1
+    confidence: float = 1.0
+    created_at: Optional[str] = None
+    updated_at: Optional[str] = None
+
+

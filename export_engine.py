@@ -232,3 +232,400 @@ def export_to_formatted_excel(
         out_p.write_bytes(excel_bytes)
 
     return excel_bytes
+
+
+def export_to_canonical_json(
+    items: list,
+    metadata: Optional[Dict[str, Any]] = None,
+    returns: Optional[list] = None,
+) -> Dict[str, Any]:
+    """
+    Generates an ERP-compatible, cloud-database sync payload formatted for
+    pharmacy retail stock list updating and purchase ledger ingestion.
+    """
+    if metadata is None:
+        metadata = {}
+
+    stock_items = []
+    total_billed_qty = 0.0
+    total_free_qty = 0.0
+    total_gross = 0.0
+    total_taxable = 0.0
+    total_net = 0.0
+
+    for it in (items or []):
+        qty = float(it.get("quantity") or 0.0)
+        free_qty = float(it.get("freeQuantity") or 0.0)
+        rate = float(it.get("rate") or 0.0)
+        amount = float(it.get("amount") or 0.0)
+        disc_pct = float(it.get("discountPercent") or 0.0)
+        taxable = float(it.get("taxableAmount") or (amount * (1.0 - (disc_pct / 100.0))))
+        net = float(it.get("netAmount") or taxable)
+
+        total_billed_qty += qty
+        total_free_qty += free_qty
+        total_gross += amount
+        total_taxable += taxable
+        total_net += net
+
+        stock_items.append({
+            "product_name": it.get("itemName") or it.get("product_name") or "",
+            "pack": it.get("pack") or "",
+            "batch_no": it.get("batchNo") or "",
+            "expiry_date": it.get("expiryDate") or "",
+            "hsn_code": it.get("hsnCode") or "",
+            "billed_quantity": qty,
+            "free_quantity": free_qty,
+            "total_received_stock": qty + free_qty,
+            "mrp": float(it.get("mrp") or 0.0),
+            "ptr_rate": rate,
+            "discount_percent": disc_pct,
+            "taxable_amount": round(taxable, 2),
+            "gst_percent": float(it.get("gstPercent") or 0.0),
+            "cgst_percent": float(it.get("cgstPercent") or 0.0),
+            "sgst_percent": float(it.get("sgstPercent") or 0.0),
+            "line_gross_amount": round(amount, 2),
+            "line_net_amount": round(net, 2),
+            "accounting_status": it.get("_accounting_proof", {}).get("accounting_status", "VALID"),
+            "accounting_confidence": it.get("_accounting_proof", {}).get("accounting_confidence", 1.0),
+        })
+
+    payload = {
+        "supplier": {
+            "name": metadata.get("supplier_name") or metadata.get("supplier") or "UNKNOWN",
+            "gstin": metadata.get("gstin") or metadata.get("supplier_gstin") or "",
+            "dl_no": metadata.get("dl_no") or "",
+        },
+        "invoice": {
+            "invoice_no": metadata.get("invoice_number") or metadata.get("invoice_no") or "",
+            "invoice_date": metadata.get("invoice_date") or metadata.get("date") or "",
+            "total_items_count": len(stock_items),
+            "total_billed_qty": total_billed_qty,
+            "total_free_qty": total_free_qty,
+            "total_gross_amount": round(total_gross, 2),
+            "total_taxable_amount": round(total_taxable, 2),
+            "total_net_amount": round(total_net, 2),
+        },
+        "stock_update_items": stock_items,
+        "returns_adjusted": returns or [],
+    }
+
+    return payload
+
+
+def export_to_marg_csv(
+    df: pd.DataFrame,
+    metadata: Optional[Dict[str, Any]] = None,
+    output_path: Optional[Union[str, Path]] = None,
+) -> str:
+    """
+    Generates Marg ERP 9+ compatible purchase import CSV format.
+    Marg is used by over 70% of Indian retail pharmacy stores.
+    """
+    if metadata is None:
+        metadata = {}
+
+    marg_rows = []
+    for _, row in df.iterrows():
+        item_name = str(row.get("itemName") or "").strip()
+        if not item_name:
+            continue
+
+        pack = str(row.get("pack") or "").strip()
+        batch_no = str(row.get("batchNo") or "").strip()
+        exp_date = str(row.get("expiryDate") or "").strip()
+        hsn = str(row.get("hsnCode") or "").strip()
+
+        try:
+            qty = float(row.get("quantity") or 0.0)
+            qty_val = int(qty) if qty.is_integer() else qty
+        except (ValueError, TypeError):
+            qty_val = 0
+
+        try:
+            free_qty = float(row.get("freeQuantity") or 0.0)
+            free_val = int(free_qty) if free_qty.is_integer() else free_qty
+        except (ValueError, TypeError):
+            free_val = 0
+
+        try:
+            rate = float(row.get("rate") or 0.0)
+        except (ValueError, TypeError):
+            rate = 0.0
+
+        try:
+            mrp = float(row.get("mrp") or 0.0)
+        except (ValueError, TypeError):
+            mrp = 0.0
+
+        try:
+            disc = float(row.get("discountPercent") or 0.0)
+        except (ValueError, TypeError):
+            disc = 0.0
+
+        try:
+            gst = float(row.get("gstPercent") or 0.0)
+        except (ValueError, TypeError):
+            gst = 0.0
+
+        try:
+            amount = float(row.get("amount") or (qty_val * rate))
+        except (ValueError, TypeError):
+            amount = 0.0
+
+        try:
+            net = float(row.get("netAmount") or (amount * (1.0 - disc / 100.0) * (1.0 + gst / 100.0)))
+        except (ValueError, TypeError):
+            net = amount
+
+        marg_rows.append({
+            "ITEM_NAME": item_name,
+            "PACKING": pack,
+            "BATCH_NO": batch_no,
+            "EXPIRY": exp_date,
+            "HSN_CODE": hsn,
+            "QTY": qty_val,
+            "FREE_QTY": free_val,
+            "PURCHASE_RATE": round(rate, 2),
+            "MRP": round(mrp, 2),
+            "DISC_PER": round(disc, 2),
+            "GST_PER": round(gst, 2),
+            "GROSS_AMOUNT": round(amount, 2),
+            "NET_AMOUNT": round(net, 2),
+        })
+
+    marg_df = pd.DataFrame(marg_rows)
+    csv_str = marg_df.to_csv(index=False)
+
+    if output_path:
+        p = Path(output_path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(csv_str, encoding="utf-8")
+
+    return csv_str
+
+
+def export_to_tally_xml(
+    df: pd.DataFrame,
+    metadata: Optional[Dict[str, Any]] = None,
+    output_path: Optional[Union[str, Path]] = None,
+) -> str:
+    """
+    Generates standard TallyPrime / Tally.ERP 9 XML Purchase Voucher format with
+    inventory item allocations, batch allocations, and CGST/SGST/IGST tax ledgers.
+    """
+    if metadata is None:
+        metadata = {}
+
+    supplier_name = metadata.get("supplier_name") or metadata.get("supplier") or "Sundry Creditors"
+    invoice_no = metadata.get("invoice_number") or metadata.get("invoice_no") or "INV-PURCHASE"
+    raw_date = metadata.get("invoice_date") or metadata.get("date") or ""
+
+    # Format date as YYYYMMDD for Tally
+    tally_date = "20260401"
+    if raw_date:
+        clean_d = raw_date.replace("-", "").replace("/", "").strip()
+        if len(clean_d) == 8 and clean_d.isdigit():
+            # If DDMMYYYY convert to YYYYMMDD
+            if int(clean_d[:2]) <= 31 and int(clean_d[2:4]) <= 12:
+                tally_date = clean_d[4:] + clean_d[2:4] + clean_d[:2]
+            else:
+                tally_date = clean_d
+
+    inv_entries_xml = []
+    total_taxable = 0.0
+    total_cgst = 0.0
+    total_sgst = 0.0
+    total_igst = 0.0
+    total_net = 0.0
+
+    for _, row in df.iterrows():
+        item_name = str(row.get("itemName") or "").strip()
+        if not item_name:
+            continue
+
+        batch_no = str(row.get("batchNo") or "PRIMARY").strip()
+        exp_date = str(row.get("expiryDate") or "").strip()
+
+        try:
+            qty = float(row.get("quantity") or 0.0)
+            free_qty = float(row.get("freeQuantity") or 0.0)
+        except (ValueError, TypeError):
+            qty, free_qty = 0.0, 0.0
+
+        actual_qty = qty + free_qty
+        billed_qty = qty
+
+        try:
+            rate = float(row.get("rate") or 0.0)
+        except (ValueError, TypeError):
+            rate = 0.0
+
+        try:
+            amount = float(row.get("amount") or (billed_qty * rate))
+        except (ValueError, TypeError):
+            amount = 0.0
+
+        try:
+            disc = float(row.get("discountPercent") or 0.0)
+        except (ValueError, TypeError):
+            disc = 0.0
+
+        taxable = float(row.get("taxableAmount") or (amount * (1.0 - disc / 100.0)))
+
+        try:
+            gst_pct = float(row.get("gstPercent") or 0.0)
+            cgst_pct = float(row.get("cgstPercent") or (gst_pct / 2.0))
+            sgst_pct = float(row.get("sgstPercent") or (gst_pct / 2.0))
+        except (ValueError, TypeError):
+            gst_pct, cgst_pct, sgst_pct = 0.0, 0.0, 0.0
+
+        cgst_amt = round(taxable * (cgst_pct / 100.0), 2)
+        sgst_amt = round(taxable * (sgst_pct / 100.0), 2)
+        net_amt = round(taxable + cgst_amt + sgst_amt, 2)
+
+        total_taxable += taxable
+        total_cgst += cgst_amt
+        total_sgst += sgst_amt
+        total_net += net_amt
+
+        inv_entry = f"""            <ALLINVENTORYENTRIES.LIST>
+              <STOCKITEMNAME>{item_name}</STOCKITEMNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <RATE>{rate:.2f}/Nos</RATE>
+              <AMOUNT>-{taxable:.2f}</AMOUNT>
+              <ACTUALQTY> {actual_qty:.0f} Nos</ACTUALQTY>
+              <BILLEDQTY> {billed_qty:.0f} Nos</BILLEDQTY>
+              <BATCHALLOCATIONS.LIST>
+                <GODOWNNAME>Main Location</GODOWNNAME>
+                <BATCHNAME>{batch_no}</BATCHNAME>
+                <EXPIRYDATE>{exp_date}</EXPIRYDATE>
+                <AMOUNT>-{taxable:.2f}</AMOUNT>
+                <ACTUALQTY> {actual_qty:.0f} Nos</ACTUALQTY>
+                <BILLEDQTY> {billed_qty:.0f} Nos</BILLEDQTY>
+              </BATCHALLOCATIONS.LIST>
+            </ALLINVENTORYENTRIES.LIST>"""
+        inv_entries_xml.append(inv_entry)
+
+    inv_block = "\n".join(inv_entries_xml)
+
+    # Tax Ledgers
+    tax_ledgers = []
+    if total_cgst > 0:
+        tax_ledgers.append(f"""            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>Input CGST</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-{total_cgst:.2f}</AMOUNT>
+            </LEDGERENTRIES.LIST>""")
+    if total_sgst > 0:
+        tax_ledgers.append(f"""            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>Input SGST</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-{total_sgst:.2f}</AMOUNT>
+            </LEDGERENTRIES.LIST>""")
+    if total_igst > 0:
+        tax_ledgers.append(f"""            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>Input IGST</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-{total_igst:.2f}</AMOUNT>
+            </LEDGERENTRIES.LIST>""")
+
+    tax_block = "\n".join(tax_ledgers)
+
+    xml_content = f"""<ENVELOPE>
+  <HEADER>
+    <TALLYREQUEST>Import Data</TALLYREQUEST>
+  </HEADER>
+  <BODY>
+    <IMPORTDATA>
+      <REQUESTDESC>
+        <REPORTNAME>Vouchers</REPORTNAME>
+        <STATICVARIABLES>
+          <SVCURRENTCOMPANY>MediAstra Pharmacy</SVCURRENTCOMPANY>
+        </STATICVARIABLES>
+      </REQUESTDESC>
+      <REQUESTDATA>
+        <TALLYMESSAGE xmlns:UDF="TallyUDF">
+          <VOUCHER VCHTYPE="Purchase" ACTION="Create">
+            <DATE>{tally_date}</DATE>
+            <VOUCHERTYPENAME>Purchase</VOUCHERTYPENAME>
+            <VOUCHERNUMBER>{invoice_no}</VOUCHERNUMBER>
+            <REFERENCE>{invoice_no}</REFERENCE>
+            <PARTYLEDGERNAME>{supplier_name}</PARTYLEDGERNAME>
+            <PARTYNAME>{supplier_name}</PARTYNAME>
+            <PERSISTEDVIEW>Invoice Mode</PERSISTEDVIEW>
+{inv_block}
+            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>Purchase Account</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>Yes</ISDEEMEDPOSITIVE>
+              <AMOUNT>-{total_taxable:.2f}</AMOUNT>
+            </LEDGERENTRIES.LIST>
+{tax_block}
+            <LEDGERENTRIES.LIST>
+              <LEDGERNAME>{supplier_name}</LEDGERNAME>
+              <ISDEEMEDPOSITIVE>No</ISDEEMEDPOSITIVE>
+              <AMOUNT>{total_net:.2f}</AMOUNT>
+            </LEDGERENTRIES.LIST>
+          </VOUCHER>
+        </TALLYMESSAGE>
+      </REQUESTDATA>
+    </IMPORTDATA>
+  </BODY>
+</ENVELOPE>"""
+
+    if output_path:
+        p = Path(output_path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(xml_content, encoding="utf-8")
+
+    return xml_content
+
+
+def export_to_busy_vyapar_excel(
+    df: pd.DataFrame,
+    metadata: Optional[Dict[str, Any]] = None,
+    output_path: Optional[Union[str, Path]] = None,
+) -> bytes:
+    """
+    Generates a spreadsheet formatted for Busy Accounting and Vyapar item/purchase import.
+    """
+    if metadata is None:
+        metadata = {}
+
+    rows = []
+    for _, r in df.iterrows():
+        item_name = str(r.get("itemName") or "").strip()
+        if not item_name:
+            continue
+
+        try:
+            qty = float(r.get("quantity") or 0.0)
+            free = float(r.get("freeQuantity") or 0.0)
+            rate = float(r.get("rate") or 0.0)
+            mrp = float(r.get("mrp") or 0.0)
+            disc = float(r.get("discountPercent") or 0.0)
+            gst = float(r.get("gstPercent") or 0.0)
+            amount = float(r.get("amount") or (qty * rate))
+            net = float(r.get("netAmount") or (amount * (1.0 - disc / 100.0) * (1.0 + gst / 100.0)))
+        except (ValueError, TypeError):
+            qty, free, rate, mrp, disc, gst, amount, net = 0, 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+
+        rows.append({
+            "Item Name": item_name,
+            "HSN/SAC": str(r.get("hsnCode") or ""),
+            "Unit": str(r.get("pack") or "NOS"),
+            "Batch No": str(r.get("batchNo") or ""),
+            "Expiry Date": str(r.get("expiryDate") or ""),
+            "Billed Qty": qty,
+            "Free Qty": free,
+            "Purchase Price": rate,
+            "MRP": mrp,
+            "Discount %": disc,
+            "Tax Rate %": gst,
+            "Taxable Value": round(amount * (1.0 - disc / 100.0), 2),
+            "Total Amount": round(net, 2),
+        })
+
+    busy_df = pd.DataFrame(rows)
+    return export_to_formatted_excel(busy_df, metadata=metadata, output_path=output_path)
+

@@ -12,6 +12,9 @@ from extractor import (
     extract_invoice_metadata,
     parse_compound_qty,
     standardize_date,
+    standardize_pharma_expiry_date,
+    analyze_expiry_shelf_life,
+    compute_purchase_margin_and_ppv,
     ALIAS_DICT,
     SYSTEM_COLUMNS,
     SYSTEM_FIELD_ORDER,
@@ -30,6 +33,12 @@ from extractor import (
     validate_supplier_identity_safety,
     normalize_quantity_value,
     tokenize_compound_quantity,
+    segment_invoice_sections,
+    merge_wrapped_continuation_rows,
+    reconstruct_logical_rows,
+    solve_row_accounting_constraints,
+    filter_continuation_header_and_subtotal_rows,
+    reconcile_invoice_grand_totals,
 )
 from batch_processor import (
     process_single_document,
@@ -39,8 +48,27 @@ from batch_processor import (
     BatchProcessingResult,
     DocumentProcessingResult,
 )
-from export_engine import export_to_formatted_excel
+from export_engine import (
+    export_to_formatted_excel,
+    export_to_canonical_json,
+    export_to_marg_csv,
+    export_to_tally_xml,
+    export_to_busy_vyapar_excel,
+)
 from storage import StorageService, DEFAULT_DB_PATH
+from product_alias_engine import (
+    resolve_product_alias,
+    resolve_invoice_row_aliases,
+    learn_product_alias,
+    normalize_drug_name_tokens,
+)
+from hsn_tax_sentinel import (
+    validate_hsn_code,
+    validate_gst_tax_slab,
+    audit_line_item_tax,
+    audit_invoice_tax_compliance,
+)
+from watcher import InvoiceFolderWatcher
 
 st.set_page_config(page_title="MediAstra - Pharma PDF Purchase Import Engine", layout="wide")
 
@@ -681,9 +709,10 @@ with st.sidebar:
     else:
         st.caption("No supplier templates saved yet.")
 
-tab_single, tab_batch, tab_eval = st.tabs([
+tab_single, tab_batch, tab_watcher, tab_eval = st.tabs([
     "📄 Single Invoice Extraction",
     "📦 Batch Processing & Review Queue",
+    "📁 Hot-Folder Ingestion Daemon",
     "📊 Evaluation & Error Analysis",
 ])
 
@@ -1118,53 +1147,215 @@ if uploaded_file is not None:
             padded = list(row) + [""] * max(0, len(headers) - len(row))
             normalized_rows.append(padded[: len(headers)])
 
+        # Apply section segmentation (e.g. Divya Pharma Returns Adjusted)
+        sections = segment_invoice_sections(normalized_rows, headers=headers)
+        purchases_raw = sections.get("purchase_items", [])
+        returns_raw = sections.get("returns_adjusted", [])
+
         clean_df = build_clean_dataframe(
             headers,
-            normalized_rows,
+            purchases_raw if purchases_raw else normalized_rows,
             confirmed_mappings=confirmed_mappings,
             fallback_column_mappings=column_mappings,
         )
+
         display_df = clean_df.copy()
         display_df.insert(0, "s.no", range(1, len(display_df) + 1))
 
+        # Multi-page continuity notice if rows were filtered
+        filtered_continuation = metadata.get("continuation_filtered_rows", [])
+        if filtered_continuation:
+            st.caption(f"✨ **Multi-Page Continuity**: Successfully suppressed **{len(filtered_continuation)} continuation page artifact(s)** (repeated headers, B/F & C/F totals).")
+
+        # Grand Total Reconciliation Summary
+        items_records = clean_df.to_dict(orient="records") if not clean_df.empty else []
+        recon_result = reconcile_invoice_grand_totals(items_records, metadata=metadata)
+        
+        recon_status = recon_result.get("reconciliation_status")
+        calc_totals = recon_result.get("calculated_line_totals", {})
+        
+        # Margin & Expiry Sentinel Analysis across line items
+        inv_date = metadata.get("invoice_date")
+        short_exp_items = []
+        expired_items = []
+        total_scheme_benefit = 0.0
+        margins_list = []
+
+        for r in items_records:
+            exp_v = r.get("expiryDate")
+            if exp_v:
+                shelf_info = analyze_expiry_shelf_life(exp_v, reference_date=inv_date)
+                if shelf_info.get("risk_category") == "EXPIRED_STOCK":
+                    expired_items.append(r.get("itemName", "Item"))
+                elif shelf_info.get("is_short_expiry"):
+                    short_exp_items.append(f"{r.get('itemName', 'Item')} (Exp: {shelf_info.get('formatted_expiry')}, {shelf_info.get('shelf_life_months')} mo)")
+
+            m_info = compute_purchase_margin_and_ppv(r)
+            if m_info.get("scheme_value_benefit_rs"):
+                total_scheme_benefit += m_info["scheme_value_benefit_rs"]
+            if m_info.get("retail_margin_percent") and m_info["retail_margin_percent"] > 0:
+                margins_list.append(m_info["retail_margin_percent"])
+
+        avg_margin = (sum(margins_list) / len(margins_list)) if margins_list else 0.0
+
+        m_c1, m_c2, m_c3, m_c4, m_c5 = st.columns(5)
+        with m_c1:
+            st.metric("Total Line Items", f"{len(display_df)} items")
+        with m_c2:
+            st.metric("Total Billed Qty", f"{calc_totals.get('total_billed_qty', 0):g} units")
+        with m_c3:
+            st.metric("Total Taxable", f"₹ {calc_totals.get('sum_taxable_amount', 0):,.2f}")
+        with m_c4:
+            st.metric("Invoice Net Total", f"₹ {calc_totals.get('sum_net_amount', 0):,.2f}")
+        with m_c5:
+            st.metric("Avg Retail Margin", f"{avg_margin:.1f}%", help=f"Total Scheme Free Goods Benefit: ₹{total_scheme_benefit:,.2f}")
+
+        if recon_status == "RECONCILED_BALANCED":
+            st.success(f"✅ **Invoice Accounting Reconciled**: {recon_result.get('reconciliation_message')}")
+        elif recon_status == "MINOR_ROUNDING_VARIANCE":
+            st.info(f"ℹ️ **Rounding Balance**: {recon_result.get('reconciliation_message')}")
+        elif recon_status == "UNRECONCILED_MISMATCH":
+            st.warning(f"⚠️ **Accounting Variance**: {recon_result.get('reconciliation_message')}")
+
+        # Enrich Line Items with Master Product Code resolution
+        storage_svc = StorageService()
+        sup_obj = storage_svc.find_supplier_by_key(metadata.get("supplier_gstin") or metadata.get("supplier_name") or "")
+        sup_id = sup_obj.id if sup_obj else None
+
+        enriched_items = resolve_invoice_row_aliases(items_records, supplier_id=sup_id, storage_service=storage_svc)
+
+        st.markdown("##### 📦 Purchase Line Items")
         st.dataframe(display_df, use_container_width=True, hide_index=True)
 
-        st.subheader("4. Export Purchase Data")
-        col_dl1, col_dl2, col_dl3 = st.columns(3)
+        # HSN & Statutory GST Tax Compliance Audit Panel
+        tax_audit = audit_invoice_tax_compliance(enriched_items, invoice_meta=metadata)
+        with st.expander("🏛️ Statutory GST & HSN Tax Audit Sentinel", expanded=not tax_audit.get("is_overall_compliant", True)):
+            t_c1, t_c2, t_c3 = st.columns(3)
+            with t_c1:
+                st.metric("Total Eligible ITC Claim", f"₹ {tax_audit['total_itc_claimable']:,.2f}")
+            with t_c2:
+                st.metric("Total GST Amount", f"₹ {tax_audit['total_gst_amount']:,.2f}")
+            with t_c3:
+                comp_status = "✅ 100% Statutory Compliant" if tax_audit["is_overall_compliant"] else f"⚠️ {tax_audit['compliance_alerts_count']} Warning(s)"
+                st.metric("Tax Compliance Status", comp_status)
 
-        csv_bytes = display_df.to_csv(index=False).encode("utf-8")
+            if tax_audit.get("tax_slab_breakdown"):
+                st.caption("Statutory GST Tax Slab Breakdown:")
+                slab_rows = []
+                for slab_lbl, slab_info in tax_audit["tax_slab_breakdown"].items():
+                    slab_rows.append({
+                        "GST Slab": slab_lbl,
+                        "Line Items": slab_info["item_count"],
+                        "Taxable Value (₹)": f"{slab_info['taxable_amount']:,.2f}",
+                        "CGST (₹)": f"{slab_info['cgst_amount']:,.2f}",
+                        "SGST (₹)": f"{slab_info['sgst_amount']:,.2f}",
+                        "IGST (₹)": f"{slab_info['igst_amount']:,.2f}",
+                        "Total Tax (₹)": f"{slab_info['total_gst_amount']:,.2f}",
+                    })
+                st.dataframe(pd.DataFrame(slab_rows), use_container_width=True, hide_index=True)
+
+            if tax_audit.get("compliance_alerts"):
+                for alt in tax_audit["compliance_alerts"]:
+                    st.warning(alt)
+
+        returns_df = pd.DataFrame()
+        if returns_raw:
+            st.markdown("##### 🔄 Returns & Credit Notes Adjusted In This Invoice")
+            returns_clean = build_clean_dataframe(
+                headers,
+                returns_raw,
+                confirmed_mappings=confirmed_mappings,
+                fallback_column_mappings=column_mappings,
+            )
+            returns_df = returns_clean.copy()
+            returns_df.insert(0, "s.no", range(1, len(returns_df) + 1))
+            st.dataframe(returns_df, use_container_width=True, hide_index=True)
+
+        st.subheader("4. Export & Pharmacy ERP Integration")
+        col_dl1, col_dl2, col_dl3, col_dl4, col_dl5 = st.columns(5)
+
+        marg_csv_str = export_to_marg_csv(clean_df, metadata=metadata)
         with col_dl1:
             st.download_button(
-                label="📥 Download CSV",
-                data=csv_bytes,
-                file_name=f"{invoice_no}_purchase.csv",
+                label="📥 Marg ERP (.csv)",
+                data=marg_csv_str.encode("utf-8"),
+                file_name=f"{invoice_no}_marg.csv",
                 mime="text/csv",
                 use_container_width=True,
+                help="Download ready-to-import Marg ERP 9+ purchase format",
+            )
+
+        tally_xml_str = export_to_tally_xml(clean_df, metadata=metadata)
+        with col_dl2:
+            st.download_button(
+                label="📑 Tally Voucher (.xml)",
+                data=tally_xml_str.encode("utf-8"),
+                file_name=f"{invoice_no}_tally.xml",
+                mime="application/xml",
+                use_container_width=True,
+                help="Download standard TallyPrime Purchase Voucher XML",
             )
 
         excel_bytes = export_to_formatted_excel(clean_df, metadata=metadata)
-        with col_dl2:
+        with col_dl3:
             st.download_button(
-                label="📊 Download Formatted Excel (.xlsx)",
+                label="📊 Excel (.xlsx)",
                 data=excel_bytes,
                 file_name=f"{invoice_no}_purchase.xlsx",
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True,
+                help="Download formatted Excel sheet with live formulas",
             )
 
-        payload = {
-            "invoiceMetadata": metadata,
-            "purchaseItems": clean_df.to_dict(orient="records") if not clean_df.empty else [],
-        }
-        json_bytes = json.dumps(payload, indent=2).encode("utf-8")
-        with col_dl3:
+        canonical_payload = export_to_canonical_json(
+            items=clean_df.to_dict(orient="records") if not clean_df.empty else [],
+            metadata=metadata,
+            returns=returns_df.to_dict(orient="records") if not returns_df.empty else [],
+        )
+        canonical_json_str = json.dumps(canonical_payload, indent=2)
+
+        with col_dl4:
             st.download_button(
-                label="📦 Download JSON",
-                data=json_bytes,
-                file_name=f"{invoice_no}_purchase.json",
+                label="☁️ Stock Payload (.json)",
+                data=canonical_json_str.encode("utf-8"),
+                file_name=f"{invoice_no}_canonical.json",
                 mime="application/json",
                 use_container_width=True,
+                help="Download canonical stock inventory cloud sync payload",
             )
+
+        csv_bytes = display_df.to_csv(index=False).encode("utf-8")
+        with col_dl5:
+            st.download_button(
+                label="📥 Standard CSV",
+                data=csv_bytes,
+                file_name=f"{invoice_no}_purchase.csv",
+                mime="text/csv",
+                use_container_width=True,
+                help="Download standard comma-separated values file",
+            )
+
+        # Cloud & Local Stock Database Sync Panel
+        with st.expander("☁️ Cloud Stock Inventory Database Sync", expanded=False):
+            st.caption("Standardized JSON payload for ERP, POS, and cloud database stock inventory synchronization:")
+            st.json(canonical_payload)
+
+            btn_col1, btn_col2 = st.columns([1.5, 2.5])
+            with btn_col1:
+                if st.button("🚀 Commit to Stock Inventory Database", type="primary", key="btn_commit_stock"):
+                    try:
+                        storage_svc = StorageService()
+                        sync_res = storage_svc.ingest_stock_payload(canonical_payload)
+                        st.success(
+                            f"✅ Stock inventory updated! "
+                            f"Items: {sync_res.get('items_updated', 0)} | "
+                            f"Total Units Added: +{sync_res.get('total_stock_added', 0):.0f} | "
+                            f"Returns Adjusted: {sync_res.get('returns_adjusted', 0)}"
+                        )
+                    except Exception as sync_err:
+                        st.error(f"Error syncing stock to database: {sync_err}")
+            with btn_col2:
+                st.caption("Synchronizes received stock (Billed + Free) and deducts credit returns in database.")
     else:
         clean_df = pd.DataFrame()
         st.info("No line items available to preview. Map at least Item Name to continue.")
@@ -1293,7 +1484,130 @@ with tab_batch:
             )
 
 # ------------------------------------------------------------------------------
-# 3. TAB: EVALUATION & ERROR ANALYSIS (Prompt 12)
+# 3. TAB: HOT-FOLDER INGESTION DAEMON & PRODUCT ALIAS MANAGER (Phase 8)
+# ------------------------------------------------------------------------------
+with tab_watcher:
+    st.header("📁 Autonomous Hot-Folder Ingestion & Product Alias Engine")
+    st.caption(
+        "Monitors incoming supplier invoice folders, verifies write locks, runs deterministic extraction, "
+        "auto-syncs inventory to SQLite on AUTO_ACCEPT, and maps supplier names to pharmacy master item codes."
+    )
+
+    w_col1, w_col2 = st.columns([1.6, 1.4])
+
+    # Global watcher instance in session state
+    if "folder_watcher" not in st.session_state:
+        st.session_state["folder_watcher"] = InvoiceFolderWatcher(
+            inbox_dir=os.path.join(os.path.dirname(__file__), "incoming_invoices"),
+            processed_dir=os.path.join(os.path.dirname(__file__), "processed_invoices"),
+            review_dir=os.path.join(os.path.dirname(__file__), "review_queue"),
+            error_dir=os.path.join(os.path.dirname(__file__), "corrupted_invoices"),
+            poll_interval_sec=2.0,
+            auto_sync_stock=True,
+        )
+
+    watcher: InvoiceFolderWatcher = st.session_state["folder_watcher"]
+    metrics = watcher.get_watcher_metrics()
+
+    with w_col1:
+        st.subheader("🤖 Hot-Folder Ingestion Daemon")
+
+        # Daemon controls
+        c_act1, c_act2, c_act3 = st.columns(3)
+        with c_act1:
+            if not watcher.is_running():
+                if st.button("🚀 Start Daemon", type="primary", use_container_width=True):
+                    watcher.start()
+                    st.toast("Hot-Folder Watcher Daemon Started!")
+                    st.rerun()
+            else:
+                if st.button("🛑 Stop Daemon", use_container_width=True):
+                    watcher.stop()
+                    st.toast("Hot-Folder Watcher Stopped.")
+                    st.rerun()
+
+        with c_act2:
+            if st.button("⚡ Scan & Ingest Now", use_container_width=True):
+                with st.spinner("Scanning inbox folder for new supplier invoices..."):
+                    scan_res = watcher.scan_and_process_once()
+                    st.success(f"Scan complete! Processed {len(scan_res)} invoice document(s).")
+                    st.rerun()
+
+        with c_act3:
+            status_text = "🟢 Active (Monitoring)" if watcher.is_running() else "⚪ Stopped (Idle)"
+            st.metric("Daemon Status", status_text)
+
+        # Folder Paths
+        with st.expander("⚙️ Folder Paths Configuration", expanded=False):
+            st.text_input("Inbox Folder (WhatsApp / Scanner drops here):", value=watcher.inbox_dir, disabled=True)
+            st.text_input("Processed Archive Folder:", value=watcher.processed_dir, disabled=True)
+            st.text_input("Human Review Queue Folder:", value=watcher.review_dir, disabled=True)
+            st.text_input("Corrupted / Unreadable Folder:", value=watcher.error_dir, disabled=True)
+
+        # Live Metrics Cards
+        k1, k2, k3, k4 = st.columns(4)
+        k1.metric("Total Ingested", metrics.get("total_scanned", 0))
+        k2.metric("Auto-Accepted", metrics.get("total_auto_accepted", 0))
+        k3.metric("Review Queue", metrics.get("total_review_queued", 0))
+        k4.metric("Errors / Dups", metrics.get("total_errors", 0) + metrics.get("total_duplicates", 0))
+
+        if metrics.get("last_processed_file"):
+            st.caption(f"Last processed file: `{metrics.get('last_processed_file')}` at `{metrics.get('last_scan_time', '')[:19]}`")
+
+    with w_col2:
+        st.subheader("🏷️ Master Pharmacy Product Aliases")
+        st.caption("Map distributor product trade names to internal pharmacy ERP codes:")
+
+        storage_service = StorageService()
+
+        # Seed master catalogue helper
+        seed_col, count_col = st.columns([2, 1])
+        with seed_col:
+            if st.button("🌱 Seed Default Top Pharma Master Items", use_container_width=True):
+                seeded_cnt = storage_service.seed_default_master_pharmacy_catalogue()
+                st.success(f"✓ Seeded {seeded_cnt} standard pharmacy master medicines.")
+                st.rerun()
+        with count_col:
+            master_list = storage_service.list_master_items()
+            st.metric("Master Items", len(master_list))
+
+        # Quick Alias Registration
+        with st.expander("➕ Register New Product Alias Mapping", expanded=False):
+            new_raw_alias = st.text_input("Supplier Printed Product Name:", placeholder="e.g. TL40 TAB 15S")
+            selected_master = st.selectbox(
+                "Select Pharmacy Master Item:",
+                options=[f"{m.item_code} | {m.item_name}" for m in master_list] if master_list else ["MED-1003 | TELMA 40MG TABLET"],
+            )
+            if st.button("Save Alias Mapping", type="primary", use_container_width=True):
+                if new_raw_alias and selected_master:
+                    m_code = selected_master.split(" | ")[0]
+                    m_name = selected_master.split(" | ")[1] if " | " in selected_master else ""
+                    learn_product_alias(
+                        raw_alias=new_raw_alias,
+                        master_item_code=m_code,
+                        master_item_name=m_name,
+                        storage_service=storage_service,
+                    )
+                    st.success(f"✓ Mapped '{new_raw_alias}' ➔ {m_code} ({m_name})")
+                    st.rerun()
+
+        # View Master Items Catalogue Table
+        if master_list:
+            st.markdown("##### Standard Pharmacy Master Catalogue")
+            m_df = pd.DataFrame([
+                {
+                    "Item Code": m.item_code,
+                    "Item Name": m.item_name,
+                    "Pack": m.pack,
+                    "Default HSN": m.default_hsn,
+                    "GST %": f"{m.default_gst_percent:.1f}%",
+                }
+                for m in master_list[:15]
+            ])
+            st.dataframe(m_df, use_container_width=True, hide_index=True)
+
+# ------------------------------------------------------------------------------
+# 4. TAB: EVALUATION & ERROR ANALYSIS (Prompt 12)
 # ------------------------------------------------------------------------------
 with tab_eval:
     st.header("📊 Real-World Invoice Evaluation & Error Analysis")

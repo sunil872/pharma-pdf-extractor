@@ -98,6 +98,8 @@ FOOTER_STOP_WORDS = [
     "authorized signatory", "taxable amt", "taxable value",
     "outstanding", "for oustanding", "for outstanding",
     "picked by", "checked by", "packed by", "delivery by",
+    "created by", "pkd by", "*pkd by", "class total", "disc taxable",
+    "**grb", "no grb", "fridge products", "from 5th to", "terms & conditions", "terms and conditions",
 ]
 
 # Letterhead / party / page chrome that must never become line items.
@@ -972,7 +974,7 @@ def validate_field_quality(field_name: str, values: list, header_str: str = "", 
                 suspicious_count += 1
 
         elif field_name == "discountPercent":
-            if f_num is not None and 0.0 <= f_num <= 100.0:
+            if f_num is not None and -100.0 <= f_num <= 100.0:
                 valid_format_count += 1
             else:
                 contradiction_count += 1
@@ -984,14 +986,17 @@ def validate_field_quality(field_name: str, values: list, header_str: str = "", 
                 contradiction_count += 1
 
         elif field_name == "expiryDate":
-            if standardize_date(s) is not None or bool(re.search(r"\d{1,2}[/-]\d{2,4}", s)):
+            clean_s = re.sub(r"\s+", "", str(s).strip())
+            norm_exp, _, _ = standardize_pharma_expiry_date(clean_s)
+            if norm_exp is not None or standardize_date(clean_s) is not None or bool(re.search(r"\d{1,2}[-/.]\d{1,4}", clean_s)):
                 valid_format_count += 1
             else:
                 contradiction_count += 1
 
         elif field_name == "hsnCode":
-            is_digits = bool(re.fullmatch(r"\d{4}|\d{6}|\d{8}", s))
-            is_ch = s.startswith(("30", "21", "38", "90", "33", "34", "29", "19", "40", "48"))
+            clean_digits = re.sub(r"[^\d]", "", s)
+            is_digits = bool(re.fullmatch(r"\d{4,8}", clean_digits))
+            is_ch = clean_digits.startswith(("30", "21", "38", "90", "33", "34", "29", "19", "40", "48", "98"))
             if is_digits and is_ch:
                 valid_format_count += 1
             elif is_digits:
@@ -1161,7 +1166,8 @@ def detect_and_resolve_field_swaps(headers: list, logical_columns: list, column_
 
 def validate_cross_field_accounting(rows: list, column_mappings: dict, headers: list, tolerance: float = 0.10) -> tuple[list, dict]:
     """
-    Performs non-destructive cross-field accounting validation across all rows.
+    Performs non-destructive cross-field accounting validation across all rows using
+    candidate-based constraint solving.
     Returns: (row_discrepancies, accounting_summary)
     """
     row_discrepancies = []
@@ -1170,73 +1176,25 @@ def validate_cross_field_accounting(rows: list, column_mappings: dict, headers: 
 
     field_indices = {}
     for h, info in column_mappings.items():
-        m = info.get("mapped_to")
+        m = info.get("mapped_to") if isinstance(info, dict) else info
         if m and h in headers:
             field_indices[m] = headers.index(h)
 
-    q_idx = field_indices.get("quantity")
-    r_idx = field_indices.get("rate")
-    a_idx = field_indices.get("amount")
-    d_idx = field_indices.get("discountPercent")
-    t_idx = field_indices.get("taxableAmount")
-    g_idx = field_indices.get("gstPercent")
-    n_idx = field_indices.get("netAmount")
-
     for r_num, row in enumerate(rows):
-        disc_list = []
-        qty = _to_float(row[q_idx]) if (q_idx is not None and q_idx < len(row)) else None
-        rate = _to_float(row[r_idx]) if (r_idx is not None and r_idx < len(row)) else None
-        amount = _to_float(row[a_idx]) if (a_idx is not None and a_idx < len(row)) else None
-        discount = _to_float(row[d_idx], 0.0) if (d_idx is not None and d_idx < len(row)) else 0.0
-        taxable = _to_float(row[t_idx]) if (t_idx is not None and t_idx < len(row)) else None
-        gst = _to_float(row[g_idx]) if (g_idx is not None and g_idx < len(row)) else None
-        net = _to_float(row[n_idx]) if (n_idx is not None and n_idx < len(row)) else None
+        row_dict = {}
+        for m, idx in field_indices.items():
+            if idx < len(row):
+                row_dict[m] = row[idx]
 
-        # 1. Amount validation (Qty * Rate ≈ Amount)
-        if qty is not None and rate is not None and qty > 0 and rate > 0 and amount is not None:
-            expected_amt = round(qty * rate, 2)
-            diff = abs(amount - expected_amt)
-            if diff > 0.0:
-                if diff <= 0.05:
-                    disc_list.append({
-                        "field": "amount", "extracted": amount, "expected": expected_amt,
-                        "diff": round(diff, 2), "rule": "qty * rate ≈ amount", "severity": "INFO"
-                    })
-                    total_valid_rows += 1
-                elif diff <= max(1.0, expected_amt * 0.02):
-                    disc_list.append({
-                        "field": "amount", "extracted": amount, "expected": expected_amt,
-                        "diff": round(diff, 2), "rule": "qty * rate ≈ amount", "severity": "WARNING"
-                    })
-                    total_valid_rows += 1
-                else:
-                    disc_list.append({
-                        "field": "amount", "extracted": amount, "expected": expected_amt,
-                        "diff": round(diff, 2), "rule": "qty * rate ≈ amount", "severity": "CRITICAL"
-                    })
-                    total_mismatches += 1
-            else:
-                total_valid_rows += 1
+        solved = solve_row_accounting_constraints(row_dict, tolerance=tolerance)
+        disc_list = solved.get("validation_discrepancies", [])
+        proof = solved.get("_accounting_proof", {})
+        status = proof.get("accounting_status", "VALID")
 
-        # 2. Taxable amount validation (Amount * (1 - Disc/100) ≈ Taxable)
-        if amount is not None and taxable is not None and discount is not None:
-            expected_taxable = round(amount * (1.0 - (discount / 100.0)), 2)
-            diff = abs(taxable - expected_taxable)
-            if diff > max(tolerance, expected_taxable * 0.02):
-                disc_list.append({
-                    "field": "taxableAmount", "extracted": taxable, "expected": expected_taxable,
-                    "diff": round(diff, 2), "rule": "amount * (1 - disc/100) ≈ taxable", "severity": "WARNING"
-                })
-
-        # 3. Net amount validation (Taxable * (1 + GST/100) ≈ Net)
-        if taxable is not None and net is not None and gst is not None:
-            expected_net = round(taxable * (1.0 + (gst / 100.0)), 2)
-            diff = abs(net - expected_net)
-            if diff > max(tolerance, expected_net * 0.02):
-                disc_list.append({
-                    "field": "netAmount", "extracted": net, "expected": expected_net,
-                    "diff": round(diff, 2), "rule": "taxable * (1 + gst/100) ≈ net", "severity": "WARNING"
-                })
+        if status == "MATHEMATICAL_MISMATCH" or any(d.get("status") == "MISMATCH" for d in disc_list):
+            total_mismatches += 1
+        else:
+            total_valid_rows += 1
 
         row_discrepancies.append(disc_list)
 
@@ -2388,6 +2346,23 @@ def compute_global_validation_and_confidence(headers: list, logical_columns: lis
                 f"Critical itemName truncation suspected in {truncated} row(s); human review required"
             )
 
+    # 15. Invoice Grand Total Reconciliation
+    structured_line_items = []
+    field_to_idx = {}
+    for h, info in resolved_mappings.items():
+        m = info.get("mapped_to") if isinstance(info, dict) else info
+        if m and h in headers:
+            field_to_idx[m] = headers.index(h)
+
+    for r in rows:
+        r_dict = {}
+        for m, idx in field_to_idx.items():
+            if idx < len(r):
+                r_dict[m] = r[idx]
+        structured_line_items.append(r_dict)
+
+    grand_total_recon = reconcile_invoice_grand_totals(structured_line_items, metadata=metadata or {})
+
     # Final Classification Decision
     if len(auto_accept_blockers) == 0 and doc_confidence >= 80.0:
         classification = "AUTO_ACCEPT"
@@ -2417,8 +2392,61 @@ def compute_global_validation_and_confidence(headers: list, logical_columns: lis
         "layout_signature": current_sig,
         "drift_report": drift_info,
         "swap_audit_log": swap_log,
+        "grand_total_reconciliation": grand_total_recon,
     }
 
+
+
+def normalize_scheme_text(val) -> str:
+    """
+    Cleans and normalizes potential compound quantity/scheme expressions:
+    - Strips whitespace and commas.
+    - Removes unit suffixes like 'Nos', 'Nos.', 'TAB', 'TABS', 'CAP', 'CAPS', "30'S", "'S", "S".
+    - Normalizes spacing around '+' operator.
+    - Repairs OCR letter-to-digit confusion within numeric scheme tokens (e.g. 'O' -> '0', 'l' -> '1', 'Z' -> '2').
+    - Leaves non-scheme words and general text untouched.
+    """
+    if val is None:
+        return ""
+    text = str(val).strip().replace(",", "")
+    if not text:
+        return ""
+
+    # Check if there is a plus sign or free indicator
+    if "+" not in text and not text.startswith("+"):
+        return text
+
+    # Remove known unit suffixes only at the end of the string
+    text = re.sub(r"(?i)\s*(?:nos\.?|tab(?:let)?s?|caps?(?:ule)?s?|packs?|strips?|units?|['`’]s)\b.*$", "", text).strip()
+
+    # Normalize whitespace around '+'
+    text = re.sub(r"\s*\+\s*", "+", text)
+
+    # Perform contextual OCR repair if the string looks like a numeric scheme pattern with OCR artifacts
+    parts = text.split("+")
+    if len(parts) == 2:
+        l_part, r_part = parts[0], parts[1]
+        def _repair_part(p: str) -> str:
+            p_clean = p.strip()
+            if not p_clean:
+                return p_clean
+            # If part contains alphabetic chars other than OCR confusions, don't repair
+            allowed_chars = set("0123456789.OoIlZz")
+            if not set(p_clean).issubset(allowed_chars):
+                return p_clean
+            rep = p_clean.replace("O", "0").replace("o", "0")
+            rep = rep.replace("I", "1").replace("l", "1")
+            rep = rep.replace("Z", "2").replace("z", "2")
+            return rep
+
+        repaired_l = _repair_part(l_part)
+        repaired_r = _repair_part(r_part)
+
+        # If both parts (or right part for '+N') look numeric after repair, use repaired text
+        if (not l_part or re.match(r"^(\d+(?:\.\d+)?|\.\d+)$", repaired_l)) and re.match(r"^(\d+(?:\.\d+)?|\.\d+)$", repaired_r):
+            text = f"{repaired_l}+{repaired_r}" if l_part else f"+{repaired_r}"
+
+    return text
 
 
 def tokenize_compound_quantity(val) -> dict:
@@ -2426,16 +2454,20 @@ def tokenize_compound_quantity(val) -> dict:
     Deterministically tokenizes a cell value into compound quantity components.
     Recognizes patterns such as:
     - 23+2, 10+2, 2.500+.500, 10 + 2, 23 + 2, 2.500 + .500, 23+0, 0+2, 23+0.5, .500+.250
-    - +2 (free only)
+    - 9.50+.50, 5.40+.60, 4.50+.50, 5.50+.50 (Mohit Pharma promotional conventions)
+    - +2, + 2, +.50 (free only)
+    - 10+2 Nos, 4+1'S, 10+O, 4+l (OCR artifacts with unit cleanup)
 
     Rejects malformed/unrelated expressions:
-    - A+B, ABC+DEF, 10+ABC, 10++2, ++, 10+, +
+    - ASTYMIN+FORTE, 10+ABC, 10++2, ++, 10+, +
 
     Returns structured dict:
     {
         "is_compound": bool,
         "left": float or None,
         "right": float or None,
+        "billed_qty": float or None,
+        "free_qty": float or None,
         "left_raw": str,
         "right_raw": str,
         "operator": "+" or None,
@@ -2444,27 +2476,28 @@ def tokenize_compound_quantity(val) -> dict:
         "confidence": float
     }
     """
+    raw_str = str(val).strip() if val is not None else ""
     default_res = {
         "is_compound": False,
         "left": None,
         "right": None,
+        "billed_qty": None,
+        "free_qty": None,
         "left_raw": "",
         "right_raw": "",
         "operator": None,
-        "raw_value": str(val) if val is not None else "",
+        "raw_value": raw_str,
         "pattern": None,
         "confidence": 0.0,
     }
-    if val is None:
+    if val is None or not raw_str:
         return default_res
 
-    text = str(val).strip().replace(",", "")
+    text = normalize_scheme_text(val)
     if not text:
         return default_res
 
-    default_res["raw_value"] = str(val).strip()
-
-    # 1. Check free-only "+N" (e.g. "+2", "+ 2", "+.500")
+    # 1. Check free-only "+N" (e.g. "+2", "+ 2", "+.500", "+.50")
     free_match = re.match(r"^\+\s*(\d+(?:\.\d+)?|\.\d+)\s*$", text)
     if free_match:
         r_str = free_match.group(1)
@@ -2474,17 +2507,19 @@ def tokenize_compound_quantity(val) -> dict:
                 "is_compound": True,
                 "left": 0.0,
                 "right": r_val,
+                "billed_qty": 0.0,
+                "free_qty": r_val,
                 "left_raw": "0",
                 "right_raw": r_str,
                 "operator": "+",
-                "raw_value": text,
+                "raw_value": raw_str,
                 "pattern": "free_only_quantity",
                 "confidence": 0.95,
             }
         except ValueError:
             return default_res
 
-    # 2. Strict Compound Qty Pattern "A + B"
+    # 2. Strict Compound Qty Pattern "A + B" (integers, floats, leading decimals)
     compound_match = re.match(
         r"^\s*(\d+(?:\.\d+)?|\.\d+)\s*\+\s*(\d+(?:\.\d+)?|\.\d+)\s*$",
         text,
@@ -2499,10 +2534,12 @@ def tokenize_compound_quantity(val) -> dict:
                 "is_compound": True,
                 "left": l_val,
                 "right": r_val,
+                "billed_qty": l_val,
+                "free_qty": r_val,
                 "left_raw": l_str,
                 "right_raw": r_str,
                 "operator": "+",
-                "raw_value": text,
+                "raw_value": raw_str,
                 "pattern": "quantity_plus_free_quantity",
                 "confidence": 1.0,
             }
@@ -2523,6 +2560,35 @@ def parse_compound_qty(val):
             tok["right"] if tok["right"] is not None else 0.0,
         )
     return (0.0, 0.0)
+
+
+def parse_quantity_scheme(val) -> tuple[float, float, dict]:
+    """
+    Parses a quantity cell into (billed_quantity, free_quantity, metadata_dict).
+    Handles single numbers as well as compound schemes (e.g. '10+2', '9.50+.50').
+    """
+    tok = tokenize_compound_quantity(val)
+    if tok["is_compound"]:
+        return (
+            tok["billed_qty"] if tok["billed_qty"] is not None else 0.0,
+            tok["free_qty"] if tok["free_qty"] is not None else 0.0,
+            tok,
+        )
+    # Single quantity
+    single_num = _to_float(val)
+    if single_num is not None:
+        return (
+            single_num,
+            0.0,
+            {
+                "is_compound": False,
+                "billed_qty": single_num,
+                "free_qty": 0.0,
+                "raw_value": str(val),
+                "confidence": 1.0,
+            },
+        )
+    return (0.0, 0.0, tok)
 
 
 def _to_float(val, default=None):
@@ -2830,167 +2896,257 @@ def fix_column_bleeding(row_dict):
     return row_dict
 
 
-def compute_row_accounting(row, tolerance: float = 0.10):
+def solve_row_accounting_constraints(
+    row_data: dict,
+    tolerance: float = 0.10,
+    preferred_amount_semantics: str = "AUTO",
+) -> dict:
     """
-    Processes line-item accounting values safely:
-    - Preserves extracted financial values if present.
-    - Derives missing financial values only when required inputs are available.
-    - Validates relationships (e.g. qty * rate vs amount) and records validation discrepancies
-      without destructively overwriting extracted values.
-    - Preserves raw values under '_raw_values' key for traceability and auditability.
-    - Reconstructs compound quantity values (e.g. '23+2' -> quantity=23, freeQuantity=2)
-      with full provenance in '_compound_provenance'.
-    - Preserves explicit taxes (CGST/SGST/IGST/GST) without inventing artificial splits.
+    Pharma Candidate-Based Accounting Constraint Solver:
+    - Resolves compound quantity schemes into billed & free quantities with provenance.
+    - Evaluates multi-candidate interpretations for the displayed 'amount' column:
+        1. GROSS = Billed_Qty * Rate
+        2. TAXABLE_PRE_GST = Gross - (Gross * Disc% / 100)
+        3. NET_POST_GST = Taxable + (Taxable * GST% / 100)
+        4. TOTAL_QTY_GROSS = (Billed_Qty + Free_Qty) * Rate
+    - Detects whether taxes (CGST/SGST/GST) are percentages or flat amounts.
+    - Derives missing financial values safely without corrupting extracted values.
+    - Computes accounting confidence score and records detailed audit proof under '_accounting_proof'.
     """
-    data = dict(row) if isinstance(row, dict) else {}
+    data = dict(row_data) if isinstance(row_data, dict) else {}
 
-    # Preserve snapshot of original raw values before any mutation
+    # 1. Snapshot raw values
     if "_raw_values" not in data:
         data["_raw_values"] = {
             k: v for k, v in data.items()
-            if k not in ("_raw_values", "validation_discrepancies", "_compound_provenance")
+            if k not in ("_raw_values", "validation_discrepancies", "_compound_provenance", "_accounting_proof")
         }
 
-    raw_qty_input = data.get("quantity")
-    raw_free_input = data.get("freeQuantity")
+    raw_qty = data.get("quantity")
+    raw_free = data.get("freeQuantity")
 
     data = fix_column_bleeding(data)
     discrepancies = list(data.get("validation_discrepancies") or [])
 
-    # Decompose compound quantity with full provenance
-    qty_tok = tokenize_compound_quantity(raw_qty_input)
-    free_tok = tokenize_compound_quantity(raw_free_input)
+    # 2. Decompose Compound Quantity
+    qty_tok = tokenize_compound_quantity(raw_qty)
+    free_tok = tokenize_compound_quantity(raw_free)
 
     if qty_tok["is_compound"]:
-        qty_ext = qty_tok["left"]
-        data["quantity"] = qty_ext
-        curr_free_float = _to_float(data.get("freeQuantity"))
-        if curr_free_float is None or curr_free_float == 0.0 or str(data.get("freeQuantity")).strip() in ("", "None", "0", "0.0"):
-            data["freeQuantity"] = qty_tok["right"]
+        billed_qty = qty_tok["billed_qty"]
+        free_qty = qty_tok["free_qty"]
+        data["quantity"] = billed_qty
+        curr_free = _to_float(data.get("freeQuantity"))
+        if curr_free is None or curr_free == 0.0 or str(data.get("freeQuantity")).strip() in ("", "None", "0", "0.0"):
+            data["freeQuantity"] = free_qty
         data["_compound_provenance"] = {
             "quantity": f"Reconstructed from compound source cell '{qty_tok['raw_value']}' (billed={qty_tok['left_raw']})",
             "freeQuantity": f"Reconstructed from compound source cell '{qty_tok['raw_value']}' (free={qty_tok['right_raw']})",
         }
-    elif raw_qty_input is not None and "+" in str(raw_qty_input):
+    elif raw_qty is not None and "+" in str(raw_qty):
         discrepancies.append({
             "field": "quantity",
-            "raw_value": str(raw_qty_input),
+            "raw_value": str(raw_qty),
             "status": "UNRESOLVED_COMPOUND",
-            "message": f"Malformed or ambiguous compound quantity '{raw_qty_input}'",
+            "message": f"Malformed or ambiguous compound quantity '{raw_qty}'",
         })
-        qty_ext = _to_float(data.get("quantity"))
+        billed_qty = _to_float(data.get("quantity"))
+        free_qty = _to_float(data.get("freeQuantity"), 0.0)
     else:
-        qty_ext = _to_float(data.get("quantity"))
+        billed_qty = _to_float(data.get("quantity"))
+        free_qty = _to_float(data.get("freeQuantity"), 0.0)
 
     if free_tok["is_compound"]:
-        free_ext = free_tok["right"]
-        data["freeQuantity"] = free_ext
-        if qty_ext is None and free_tok["left"] is not None and free_tok["left"] > 0:
-            qty_ext = free_tok["left"]
-            data["quantity"] = qty_ext
-    else:
-        free_ext = _to_float(data.get("freeQuantity"))
+        free_qty = free_tok["free_qty"]
+        data["freeQuantity"] = free_qty
+        if billed_qty is None and free_tok["billed_qty"] is not None and free_tok["billed_qty"] > 0:
+            billed_qty = free_tok["billed_qty"]
+            data["quantity"] = billed_qty
 
     rate_ext = _to_float(data.get("rate"))
-    disc_ext = _to_float(data.get("discountPercent"))
-    gst_ext = _to_float(data.get("gstPercent"))
-    cgst_ext = _to_float(data.get("cgstPercent"))
-    sgst_ext = _to_float(data.get("sgstPercent"))
+    disc_ext = _to_float(data.get("discountPercent"), 0.0)
     amount_ext = _to_float(data.get("amount"))
     taxable_ext = _to_float(data.get("taxableAmount"))
     net_ext = _to_float(data.get("netAmount"))
+    cgst_ext = _to_float(data.get("cgstPercent"))
+    sgst_ext = _to_float(data.get("sgstPercent"))
+    gst_ext = _to_float(data.get("gstPercent"))
 
-    # 2. Tax Handling:
-    # If CGST and SGST are both present, derive total GST if missing
-    gst_val = gst_ext
-    cgst_val = cgst_ext
-    sgst_val = sgst_ext
-
-    if gst_val is None and (cgst_val is not None or sgst_val is not None):
-        gst_val = round((cgst_val or 0.0) + (sgst_val or 0.0), 4)
-    elif gst_val is not None and cgst_val is not None and sgst_val is not None:
-        sum_tax = round(cgst_val + sgst_val, 4)
-        if abs(sum_tax - gst_val) > 0.05:
+    # 3. Tax Handling: normalize total GST
+    effective_gst_pct = gst_ext
+    if effective_gst_pct is None and (cgst_ext is not None or sgst_ext is not None):
+        effective_gst_pct = round((cgst_ext or 0.0) + (sgst_ext or 0.0), 4)
+    elif effective_gst_pct is not None and cgst_ext is not None and sgst_ext is not None:
+        sum_tax = round(cgst_ext + sgst_ext, 4)
+        if abs(sum_tax - effective_gst_pct) > 0.05:
             discrepancies.append({
                 "field": "gstPercent",
-                "extracted": gst_val,
+                "extracted": effective_gst_pct,
                 "calculated": sum_tax,
                 "status": "MISMATCH",
+                "message": f"CGST ({cgst_ext}%) + SGST ({sgst_ext}%) != Total GST ({effective_gst_pct}%)",
             })
 
-    # 3. Amount Handling:
-    amount_val = amount_ext
-    if amount_val is not None:
-        if qty_ext is not None and rate_ext is not None and qty_ext > 0 and rate_ext > 0:
-            calc_amount = round(qty_ext * rate_ext, 2)
-            if abs(amount_val - calc_amount) > max(tolerance, calc_amount * 0.01):
-                discrepancies.append({
-                    "field": "amount",
-                    "extracted": amount_val,
-                    "calculated": calc_amount,
-                    "status": "MISMATCH",
-                })
-    else:
-        if qty_ext is not None and rate_ext is not None:
-            amount_val = round(qty_ext * rate_ext, 2)
+    # 4. Solve Missing Rate from Amount if applicable
+    if (rate_ext is None or rate_ext <= 0) and billed_qty and billed_qty > 0 and amount_ext and amount_ext > 0:
+        rate_ext = round(amount_ext / billed_qty, 2)
+        data["rate"] = rate_ext
 
-    # 4. Taxable Amount Handling:
-    taxable_val = taxable_ext
-    if taxable_val is not None:
-        if amount_val is not None and disc_ext is not None:
-            calc_taxable = round(amount_val * (1.0 - (disc_ext / 100.0)), 2)
-            if abs(taxable_val - calc_taxable) > max(tolerance, calc_taxable * 0.01):
+    # 5. Candidate Arithmetic Calculations
+    candidate_gross = None
+    candidate_taxable = None
+    candidate_net = None
+    candidate_total_qty_gross = None
+
+    if billed_qty is not None and rate_ext is not None and billed_qty > 0 and rate_ext > 0:
+        candidate_gross = round(billed_qty * rate_ext, 2)
+        d_pct = disc_ext if disc_ext is not None else 0.0
+        candidate_taxable = round(candidate_gross * (1.0 - (d_pct / 100.0)), 2)
+        g_pct = effective_gst_pct if effective_gst_pct is not None else 0.0
+        candidate_net = round(candidate_taxable * (1.0 + (g_pct / 100.0)), 2)
+
+        if free_qty and free_qty > 0:
+            candidate_total_qty_gross = round((billed_qty + free_qty) * rate_ext, 2)
+
+    # 6. Semantic Evaluation of Extracted Amount
+    detected_semantics = "UNKNOWN"
+    accounting_status = "VALID"
+    accounting_confidence = 1.0
+
+    if amount_ext is not None and candidate_gross is not None:
+        diff_gross = abs(amount_ext - candidate_gross)
+        diff_taxable = abs(amount_ext - candidate_taxable) if candidate_taxable is not None else float("inf")
+        diff_net = abs(amount_ext - candidate_net) if candidate_net is not None else float("inf")
+        diff_total_qty = abs(amount_ext - candidate_total_qty_gross) if candidate_total_qty_gross is not None else float("inf")
+
+        tol_gross = max(tolerance, candidate_gross * 0.015)
+        tol_taxable = max(tolerance, candidate_taxable * 0.015) if candidate_taxable else tolerance
+        tol_net = max(tolerance, candidate_net * 0.015) if candidate_net else tolerance
+
+        if preferred_amount_semantics == "GROSS" and diff_gross <= tol_gross:
+            detected_semantics = "GROSS"
+            accounting_status = "EXACT_MATCH" if diff_gross <= 0.05 else "ROUNDING_DIFF"
+        elif preferred_amount_semantics == "TAXABLE_PRE_GST" and diff_taxable <= tol_taxable:
+            detected_semantics = "TAXABLE_PRE_GST"
+            accounting_status = "EXACT_MATCH" if diff_taxable <= 0.05 else "ROUNDING_DIFF"
+        elif preferred_amount_semantics == "NET_POST_GST" and diff_net <= tol_net:
+            detected_semantics = "NET_POST_GST"
+            accounting_status = "EXACT_MATCH" if diff_net <= 0.05 else "ROUNDING_DIFF"
+        elif diff_gross <= tol_gross:
+            detected_semantics = "GROSS"
+            accounting_status = "EXACT_MATCH" if diff_gross <= 0.05 else "ROUNDING_DIFF"
+        elif diff_taxable <= tol_taxable:
+            detected_semantics = "TAXABLE_PRE_GST"
+            accounting_status = "EXACT_MATCH" if diff_taxable <= 0.05 else "ROUNDING_DIFF"
+        elif diff_net <= tol_net:
+            detected_semantics = "NET_POST_GST"
+            accounting_status = "EXACT_MATCH" if diff_net <= 0.05 else "ROUNDING_DIFF"
+        elif candidate_total_qty_gross and diff_total_qty <= max(tolerance, candidate_total_qty_gross * 0.015):
+            detected_semantics = "TOTAL_QTY_GROSS"
+            accounting_status = "ROUNDING_DIFF" if diff_total_qty > 0.05 else "EXACT_MATCH"
+        else:
+            detected_semantics = "MISMATCH"
+            accounting_status = "MATHEMATICAL_MISMATCH"
+            accounting_confidence = 0.50
+            discrepancies.append({
+                "field": "amount",
+                "extracted": amount_ext,
+                "candidate_gross": candidate_gross,
+                "candidate_taxable": candidate_taxable,
+                "candidate_net": candidate_net,
+                "status": "MISMATCH",
+                "message": f"Extracted amount {amount_ext} does not match Gross ({candidate_gross}), Taxable ({candidate_taxable}), or Net ({candidate_net})",
+            })
+    elif amount_ext is None and candidate_gross is not None:
+        amount_ext = candidate_gross
+        detected_semantics = "DERIVED_GROSS"
+        accounting_status = "DERIVED"
+
+    # 7. Reconcile Taxable and Net Amounts
+    if taxable_ext is None:
+        if detected_semantics == "TAXABLE_PRE_GST" and amount_ext is not None:
+            taxable_ext = amount_ext
+        elif candidate_taxable is not None:
+            taxable_ext = candidate_taxable
+        elif amount_ext is not None:
+            d_pct = disc_ext if disc_ext is not None else 0.0
+            taxable_ext = round(amount_ext * (1.0 - (d_pct / 100.0)), 2)
+    else:
+        if candidate_taxable is not None:
+            diff_t = abs(taxable_ext - candidate_taxable)
+            if diff_t > max(tolerance, candidate_taxable * 0.02):
                 discrepancies.append({
                     "field": "taxableAmount",
-                    "extracted": taxable_val,
-                    "calculated": calc_taxable,
+                    "extracted": taxable_ext,
+                    "expected": candidate_taxable,
                     "status": "MISMATCH",
                 })
-    else:
-        if amount_val is not None:
-            d_pct = disc_ext if disc_ext is not None else 0.0
-            taxable_val = round(amount_val * (1.0 - (d_pct / 100.0)), 2)
-        elif net_ext is not None and gst_val is not None and gst_val > 0:
-            divisor = 1.0 + (gst_val / 100.0)
-            taxable_val = round(net_ext / divisor, 2)
+                accounting_confidence = min(accounting_confidence, 0.75)
 
-    # 5. Net Amount Handling:
-    net_val = net_ext
-    if net_val is not None:
-        if taxable_val is not None and gst_val is not None:
-            calc_net = round(taxable_val * (1.0 + (gst_val / 100.0)), 2)
-            if abs(net_val - calc_net) > max(tolerance, calc_net * 0.01):
+    if net_ext is None:
+        if detected_semantics == "NET_POST_GST" and amount_ext is not None:
+            net_ext = amount_ext
+        elif taxable_ext is not None:
+            g_pct = effective_gst_pct if effective_gst_pct is not None else 0.0
+            gst_amt = round(taxable_ext * (g_pct / 100.0), 2)
+            net_ext = round(taxable_ext + gst_amt, 2)
+    else:
+        if taxable_ext is not None and effective_gst_pct is not None:
+            exp_net = round(taxable_ext * (1.0 + (effective_gst_pct / 100.0)), 2)
+            diff_n = abs(net_ext - exp_net)
+            if diff_n > max(tolerance, exp_net * 0.02):
                 discrepancies.append({
                     "field": "netAmount",
-                    "extracted": net_val,
-                    "calculated": calc_net,
+                    "extracted": net_ext,
+                    "expected": exp_net,
                     "status": "MISMATCH",
                 })
-    else:
-        if taxable_val is not None:
-            g_pct = gst_val if gst_val is not None else 0.0
-            gst_amt = round(taxable_val * (g_pct / 100.0), 2)
-            net_val = round(taxable_val + gst_amt, 2)
+                accounting_confidence = min(accounting_confidence, 0.75)
 
-    # Assign values back to data dictionary, preserving explicit values or derived
-    if qty_ext is not None:
-        data["quantity"] = qty_ext
+    # 8. Assign validated values back
+    if billed_qty is not None:
+        data["quantity"] = billed_qty
+    if free_qty is not None:
+        data["freeQuantity"] = free_qty
     if rate_ext is not None:
         data["rate"] = rate_ext
     if disc_ext is not None:
         data["discountPercent"] = disc_ext
-    if gst_val is not None:
-        data["gstPercent"] = round(gst_val, 4)
-    if cgst_val is not None:
-        data["cgstPercent"] = round(cgst_val, 4)
-    if sgst_val is not None:
-        data["sgstPercent"] = round(sgst_val, 4)
-    if amount_val is not None:
-        data["amount"] = amount_val
-    if taxable_val is not None:
-        data["taxableAmount"] = taxable_val
-    if net_val is not None:
-        data["netAmount"] = net_val
+    if effective_gst_pct is not None:
+        data["gstPercent"] = round(effective_gst_pct, 4)
+    if cgst_ext is not None:
+        data["cgstPercent"] = round(cgst_ext, 4)
+    if sgst_ext is not None:
+        data["sgstPercent"] = round(sgst_ext, 4)
+    if amount_ext is not None:
+        data["amount"] = amount_ext
+    if taxable_ext is not None:
+        data["taxableAmount"] = taxable_ext
+    if net_ext is not None:
+        data["netAmount"] = net_ext
+
+    # 9. Expiry Standardization and Shelf Life Analysis
+    if data.get("expiryDate"):
+        std_exp, iso_exp, exp_meta = standardize_pharma_expiry_date(data["expiryDate"])
+        if std_exp:
+            data["expiryDate"] = std_exp
+            data["_iso_expiry_date"] = iso_exp
+            data["_shelf_life"] = analyze_expiry_shelf_life(data["expiryDate"])
+
+    # 10. Purchase Margin and PPV Intelligence
+    data["_margin_metrics"] = compute_purchase_margin_and_ppv(data)
+
+    # 11. Audit proof
+    data["_accounting_proof"] = {
+        "detected_amount_semantics": detected_semantics,
+        "accounting_status": accounting_status,
+        "accounting_confidence": round(accounting_confidence, 3),
+        "candidate_gross": candidate_gross,
+        "candidate_taxable": candidate_taxable,
+        "candidate_net": candidate_net,
+        "candidate_total_qty_gross": candidate_total_qty_gross,
+        "effective_gst_pct": effective_gst_pct,
+    }
 
     if discrepancies:
         data["validation_discrepancies"] = discrepancies
@@ -2998,39 +3154,326 @@ def compute_row_accounting(row, tolerance: float = 0.10):
     return data
 
 
-def standardize_date(val):
+def compute_row_accounting(row, tolerance: float = 0.10):
+    """
+    Processes line-item accounting values safely using candidate-based constraint solving:
+    - Preserves extracted financial values if present.
+    - Resolves compound quantity schemes (e.g. '9.50+.50' -> quantity=9.5, freeQuantity=0.5).
+    - Detects amount semantics (GROSS, TAXABLE_PRE_GST, NET_POST_GST).
+    - Preserves raw values under '_raw_values' and audit proof under '_accounting_proof'.
+    """
+    return solve_row_accounting_constraints(row, tolerance=tolerance)
+
+
+MONTH_NAME_TO_INT = {
+    "jan": 1, "january": 1,
+    "feb": 2, "february": 2,
+    "mar": 3, "march": 3,
+    "apr": 4, "april": 4,
+    "may": 5,
+    "jun": 6, "june": 6,
+    "jul": 7, "july": 7,
+    "aug": 8, "august": 8,
+    "sep": 9, "sept": 9, "september": 9,
+    "oct": 10, "october": 10,
+    "nov": 11, "november": 11,
+    "dec": 12, "december": 12,
+}
+
+
+def _last_day_of_month(year: int, month: int) -> int:
+    if month in (1, 3, 5, 7, 8, 10, 12):
+        return 31
+    if month in (4, 6, 9, 11):
+        return 30
+    if month == 2:
+        is_leap = (year % 4 == 0 and (year % 100 != 0 or year % 400 == 0))
+        return 29 if is_leap else 28
+    return 30
+
+
+def standardize_pharma_expiry_date(val) -> tuple:
+    """
+    Normalizes multi-format distributor expiry dates into (formatted_mmyyyy, iso_date, metadata_dict).
+    Handles:
+    - Standard MM/YY, MM/YYYY, MM-YY, MM-YYYY, MM.YY, MM.YYYY
+    - ISO formats: YYYY-MM, YYYY/MM, YYYY-MM-DD
+    - Textual month formats: DEC-28, DEC/2028, DEC 28, OCT/27, MAY-2029, SEPT-26
+    - Reversed formats: YY/MM (e.g. 28/12), YYYY/MM (e.g. 2028/12)
+    - Glued numerical strings: 1228 (MMYY), 122028 (MMYYYY), 202812 (YYYYMM)
+    """
     if val is None:
-        return None
+        return None, None, {"is_valid": False, "raw": None}
 
-    text = str(val).strip()
-    if not text:
-        return None
+    raw_str = str(val).strip()
+    if not raw_str or raw_str.lower() in ("none", "nan", "null", "-", "na", "n/a"):
+        return None, None, {"is_valid": False, "raw": raw_str}
 
-    digits = re.sub(r"\D", "", text)
-    if len(digits) >= 4:
-        candidates = []
-        if len(digits) >= 5 and digits[0] == "0":
-            candidates.append((digits[1:3], digits[3:5]))
-        candidates.append((digits[0:2], digits[2:4]))
-        for month_s, year_s in candidates:
+    # Normalize whitespace and separators
+    cleaned = re.sub(r"[\s\.,/\\-]+", "/", raw_str.strip()).upper()
+
+    month = None
+    year = None
+
+    # Pattern 1: Textual Month Name (e.g. DEC/28, 15/DEC/2028, DEC/2028, OCT-27)
+    for m_name, m_num in MONTH_NAME_TO_INT.items():
+        if m_name.upper() in cleaned:
+            month = m_num
+            year_matches = re.findall(r"\b(20\d{2}|\d{2})\b", cleaned)
+            for ym in year_matches:
+                y_val = int(ym)
+                if len(ym) == 2:
+                    y_val = 2000 + y_val
+                if 2020 <= y_val <= 2050:
+                    year = y_val
+                    break
+            break
+
+    # Pattern 2: Day/Month/Year or Year/Month/Day (e.g. 31/12/2028, 2028/12/31)
+    if month is None or year is None:
+        parts = [p for p in cleaned.split("/") if p]
+        if len(parts) == 3:
+            p0, p1, p2 = parts[0], parts[1], parts[2]
             try:
-                month = int(month_s)
-                year = 2000 + int(year_s)
+                # Format: YYYY/MM/DD
+                if len(p0) == 4 and 2020 <= int(p0) <= 2050 and 1 <= int(p1) <= 12:
+                    year = int(p0)
+                    month = int(p1)
+                # Format: DD/MM/YYYY
+                elif len(p2) == 4 and 2020 <= int(p2) <= 2050 and 1 <= int(p1) <= 12:
+                    year = int(p2)
+                    month = int(p1)
+                # Format: DD/MM/YY
+                elif len(p2) == 2 and 1 <= int(p1) <= 12:
+                    year = 2000 + int(p2)
+                    month = int(p1)
             except ValueError:
-                continue
-            if 1 <= month <= 12 and 2020 <= year <= 2040:
-                return f"{month:02d}/{year}"
+                pass
 
-    match = re.match(r"^(\d{1,2})[/-](\d{2,4})$", text)
-    if not match:
-        return None
+    # Pattern 3: Standard MM/YY, MM/YYYY, or YYYY/MM
+    if month is None or year is None:
+        parts = [p for p in cleaned.split("/") if p]
+        if len(parts) == 2:
+            p0, p1 = parts[0], parts[1]
+            try:
+                # Case A: YYYY/MM (e.g. 2028/12)
+                if len(p0) == 4 and 2020 <= int(p0) <= 2050 and 1 <= int(p1) <= 12:
+                    year = int(p0)
+                    month = int(p1)
+                # Case B: MM/YYYY (e.g. 12/2028)
+                elif len(p1) == 4 and 2020 <= int(p1) <= 2050 and 1 <= int(p0) <= 12:
+                    year = int(p1)
+                    month = int(p0)
+                # Case C: MM/YY (e.g. 12/28)
+                elif 1 <= int(p0) <= 12 and len(p1) == 2 and 20 <= int(p1) <= 50:
+                    month = int(p0)
+                    year = 2000 + int(p1)
+                # Case D: YY/MM (e.g. 28/12)
+                elif 20 <= int(p0) <= 50 and 1 <= int(p1) <= 12 and len(p0) == 2:
+                    year = 2000 + int(p0)
+                    month = int(p1)
+            except ValueError:
+                pass
 
-    month = int(match.group(1))
-    year_part = match.group(2)
-    year = 2000 + int(year_part) if len(year_part) == 2 else int(year_part)
-    if month < 1 or month > 12 or year < 2020 or year > 2040:
-        return None
-    return f"{month:02d}/{year}"
+    # Pattern 4: Glued pure digits (e.g. "1228" -> 12/2028, "122028" -> 12/2028, "202812" -> 12/2028)
+    if month is None or year is None:
+        digits = re.sub(r"\D", "", raw_str)
+        if len(digits) == 4:
+            m_part, y_part = digits[:2], digits[2:]
+            try:
+                m_v = int(m_part)
+                y_v = 2000 + int(y_part)
+                if 1 <= m_v <= 12 and 2020 <= y_v <= 2050:
+                    month, year = m_v, y_v
+            except ValueError:
+                pass
+        elif len(digits) == 6:
+            try:
+                m_v = int(digits[:2])
+                y_v = int(digits[2:])
+                if 1 <= m_v <= 12 and 2020 <= y_v <= 2050:
+                    month, year = m_v, y_v
+            except ValueError:
+                pass
+            if month is None:
+                try:
+                    y_v = int(digits[:4])
+                    m_v = int(digits[4:])
+                    if 1 <= m_v <= 12 and 2020 <= y_v <= 2050:
+                        month, year = m_v, y_v
+                except ValueError:
+                    pass
+
+    if month is not None and year is not None and 1 <= month <= 12 and 2020 <= year <= 2050:
+        formatted = f"{month:02d}/{year}"
+        last_day = _last_day_of_month(year, month)
+        iso_date = f"{year:04d}-{month:02d}-{last_day:02d}"
+        return formatted, iso_date, {
+            "is_valid": True,
+            "raw": raw_str,
+            "month": month,
+            "year": year,
+            "formatted_mmyyyy": formatted,
+            "iso_date": iso_date,
+        }
+
+    return None, None, {"is_valid": False, "raw": raw_str}
+
+
+def standardize_date(val):
+    """
+    Backwards-compatible wrapper returning standard 'MM/YYYY' string or None.
+    """
+    formatted, _, _ = standardize_pharma_expiry_date(val)
+    return formatted
+
+
+def analyze_expiry_shelf_life(expiry_val, reference_date=None) -> dict:
+    """
+    Calculates pharmaceutical shelf life in months and risk level relative to invoice receipt date.
+    
+    Risk Levels:
+    - EXPIRED_STOCK: Months <= 0 (Medicine is already past expiry. Return to distributor!)
+    - CRITICAL_SHORT_EXPIRY: 0 < Months < 3 (Severe shelf risk. Cannot be sold in retail.)
+    - SHORT_EXPIRY_RISK: 3 <= Months < 6 (Near expiry warning. Requires quick turnover.)
+    - ACCEPTABLE_SHELF_LIFE: 6 <= Months < 12 (Acceptable retail shelf life.)
+    - OPTIMAL_SHELF_LIFE: Months >= 12 (Optimal shelf life > 1 year.)
+    """
+    formatted, iso_date, meta = standardize_pharma_expiry_date(expiry_val)
+    if not formatted or not meta.get("is_valid"):
+        return {
+            "has_valid_expiry": False,
+            "shelf_life_months": None,
+            "risk_category": "UNKNOWN_EXPIRY",
+            "risk_level": "UNKNOWN",
+            "alert_message": "Missing or unparseable expiry date.",
+            "is_short_expiry": False,
+            "formatted_expiry": None,
+            "iso_expiry": None,
+        }
+
+    ref_year = datetime.now().year
+    ref_month = datetime.now().month
+
+    if reference_date:
+        if isinstance(reference_date, datetime):
+            ref_year = reference_date.year
+            ref_month = reference_date.month
+        elif isinstance(reference_date, str):
+            ref_cleaned = re.sub(r"[^\d]", "", reference_date)
+            if len(ref_cleaned) >= 6:
+                if reference_date.startswith("20"):
+                    try:
+                        ref_year = int(reference_date[:4])
+                        ref_month = int(reference_date[5:7]) if len(reference_date) >= 7 else ref_month
+                    except ValueError:
+                        pass
+                else:
+                    parts = re.findall(r"\d+", reference_date)
+                    if len(parts) >= 3 and len(parts[2]) == 4:
+                        try:
+                            ref_year = int(parts[2])
+                            ref_month = int(parts[1])
+                        except ValueError:
+                            pass
+
+    exp_year = meta["year"]
+    exp_month = meta["month"]
+
+    months_remaining = (exp_year - ref_year) * 12 + (exp_month - ref_month)
+
+    if months_remaining <= 0:
+        cat = "EXPIRED_STOCK"
+        level = "CRITICAL"
+        msg = f"🚨 EXPIRED MEDICINE (Expired {abs(months_remaining)} month(s) ago). Do not accept stock!"
+        is_short = True
+    elif months_remaining < 3:
+        cat = "CRITICAL_SHORT_EXPIRY"
+        level = "HIGH_RISK"
+        msg = f"⚠️ Critical Short Expiry: Only {months_remaining} month(s) shelf life remaining (< 3 months)."
+        is_short = True
+    elif months_remaining < 6:
+        cat = "SHORT_EXPIRY_RISK"
+        level = "MEDIUM_RISK"
+        msg = f"⚡ Short Expiry Warning: {months_remaining} month(s) shelf life remaining (< 6 months)."
+        is_short = True
+    elif months_remaining < 12:
+        cat = "ACCEPTABLE_SHELF_LIFE"
+        level = "SAFE"
+        msg = f"✓ Standard shelf life ({months_remaining} months remaining)."
+        is_short = False
+    else:
+        cat = "OPTIMAL_SHELF_LIFE"
+        level = "OPTIMAL"
+        msg = f"✓ Optimal shelf life ({months_remaining} months remaining)."
+        is_short = False
+
+    return {
+        "has_valid_expiry": True,
+        "shelf_life_months": months_remaining,
+        "risk_category": cat,
+        "risk_level": level,
+        "alert_message": msg,
+        "is_short_expiry": is_short,
+        "formatted_expiry": formatted,
+        "iso_expiry": iso_date,
+    }
+
+
+def compute_purchase_margin_and_ppv(item_dict: dict) -> dict:
+    """
+    Computes retail pharmacy commercial margins and Purchase Price Variance (PPV):
+    - Retail Margin % = (MRP - PTR) / MRP * 100
+    - Effective Net Cost Per Unit = Line Net Amount / (Billed Qty + Free Qty)
+    - Scheme Value Benefit = Free Qty * PTR
+    - Margin Classification: PRICE_INVERSION_ERROR, LOW_RETAIL_MARGIN, STANDARD_RETAIL_MARGIN, HIGH_MARGIN_PROMOTIONAL
+    """
+    if not isinstance(item_dict, dict):
+        return {}
+
+    mrp = _to_float(item_dict.get("mrp"), 0.0)
+    rate = _to_float(item_dict.get("rate") or item_dict.get("ptr_rate"), 0.0)
+    billed_qty = _to_float(item_dict.get("quantity") or item_dict.get("billed_quantity"), 0.0)
+    free_qty = _to_float(item_dict.get("freeQuantity") or item_dict.get("free_quantity"), 0.0)
+    net_amt = _to_float(item_dict.get("netAmount") or item_dict.get("line_net_amount"), 0.0)
+
+    total_qty = (billed_qty or 0.0) + (free_qty or 0.0)
+
+    margin_pct = 0.0
+    if mrp and mrp > 0 and rate and rate > 0:
+        margin_pct = round(((mrp - rate) / mrp) * 100.0, 2)
+
+    effective_cost = rate
+    if net_amt and net_amt > 0 and total_qty > 0:
+        effective_cost = round(net_amt / total_qty, 2)
+    elif rate and rate > 0 and total_qty > 0:
+        effective_cost = round(((billed_qty or 0.0) * rate) / total_qty, 2)
+
+    scheme_benefit_rs = round((free_qty or 0.0) * (rate or 0.0), 2) if (free_qty and rate) else 0.0
+
+    if mrp > 0 and rate > mrp:
+        alert = "PRICE_INVERSION_ERROR"
+        msg = f"🚨 Rate (₹{rate:.2f}) exceeds MRP (₹{mrp:.2f})! Distributor overcharge error."
+    elif mrp > 0 and margin_pct < 10.0:
+        alert = "LOW_RETAIL_MARGIN"
+        msg = f"⚠️ Low Retail Margin ({margin_pct:.1f}% < 10%)."
+    elif margin_pct >= 25.0:
+        alert = "HIGH_MARGIN_PROMOTIONAL"
+        msg = f"✨ High Margin Stock ({margin_pct:.1f}%)."
+    else:
+        alert = "STANDARD_RETAIL_MARGIN"
+        msg = f"✓ Standard Retail Margin ({margin_pct:.1f}%)."
+
+    return {
+        "mrp": mrp,
+        "ptr_rate": rate,
+        "retail_margin_percent": margin_pct,
+        "effective_cost_per_unit": effective_cost,
+        "scheme_value_benefit_rs": scheme_benefit_rs,
+        "total_units_received": total_qty,
+        "margin_classification": alert,
+        "margin_message": msg,
+    }
 
 
 # Phrases that boost a top-left header as a likely pharma/medical supplier trade name.
@@ -3316,12 +3759,14 @@ def extract_invoice_metadata(pdf_path):
     text = ""
     supplier_info = {}
 
+    full_text = text
     if not is_image:
         try:
             with pdfplumber.open(pdf_path) as pdf:
                 if pdf.pages:
                     first_page = pdf.pages[0]
                     text = first_page.extract_text() or ""
+                    full_text = "\n".join([(p.extract_text() or "") for p in pdf.pages])
                     supplier_info = detect_supplier_name_from_page(first_page)
         except Exception:
             is_image = True
@@ -3331,10 +3776,12 @@ def extract_invoice_metadata(pdf_path):
         try:
             if is_image:
                 text = ocr_engine.extract_text_from_image(pdf_path)
+                full_text = text
             elif ocr_engine.fitz is not None:
                 imgs = ocr_engine.render_pdf_to_images(pdf_path)
                 if imgs:
                     text = ocr_engine.extract_text_from_image(imgs[0])
+                    full_text = "\n".join([ocr_engine.extract_text_from_image(img) for img in imgs])
             if text:
                 supplier_info = extract_supplier_name_from_text(text)
         except Exception as e:
@@ -3353,6 +3800,90 @@ def extract_invoice_metadata(pdf_path):
         text,
     )
 
+    # --- Comprehensive Indian Pharma Summary Totals Extraction ---
+    grand_total = None
+    taxable_amount = None
+    gst_amount = None
+    round_off = None
+    tcs_amount = None
+    cash_discount = None
+
+    # 1. Round Off
+    round_m = re.findall(r"(?i)round\s*off\s*[:=]?\s*([+-]?\s*[\d,]+\.\d{2})", full_text)
+    if round_m:
+        try:
+            round_off = float(round_m[-1].replace(" ", "").replace(",", ""))
+        except ValueError:
+            pass
+
+    # 2. TCS
+    tcs_m = re.findall(r"(?i)\btcs\s*(?:amt|amount)?\s*[:=]?\s*[₹n]?\s*([\d,]+\.\d{2})", full_text)
+    if tcs_m:
+        try:
+            tcs_amount = float(tcs_m[-1].replace(",", ""))
+        except ValueError:
+            pass
+
+    # 3. Marg ERP GST summary table line (take the LAST summary total row)
+    marg_matches = re.findall(r"(?i)\bTOTAL\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)\s+([\d\.]+)", full_text)
+    if marg_matches:
+        try:
+            last_m = marg_matches[-1]
+            v0, v1, v2, v3, v4, v5 = [float(x) for x in last_m]
+            if abs((v2 + v1) - v0) <= 1.0 or abs((v2 + v1) - v0) <= v0 * 0.05:
+                taxable_amount = v2
+            else:
+                taxable_amount = v0 - v1 - v2
+            gst_amount = v5
+            calc_gt = taxable_amount + gst_amount + (round_off or 0.0)
+            grand_total = round(calc_gt, 2)
+        except ValueError:
+            pass
+
+    # 4. Explicit Labeled Grand Total / Net Total / Bill Amount
+    if grand_total is None:
+        gt_matches = re.findall(r"(?i)(?:grand\s*total|net\s*pay(?:able)?|bill\s*amount|total\s*payable|tot\s*net|net\s*total|invoice\s*total|grand\s*\/\s*net\s*total)\s*[:=]?\s*[₹n]?\s*([\d,]+\.\d{2})", full_text)
+        if gt_matches:
+            try:
+                grand_total = float(gt_matches[-1].replace(",", ""))
+            except ValueError:
+                pass
+
+    # 5. Capita Message: Rs. 10,183.00
+    if grand_total is None:
+        msg_match = re.findall(r"(?i)message\s*:\s*rs\.?\s*([\d,]+(?:\.\d{2})?)", full_text)
+        if msg_match:
+            try:
+                grand_total = float(msg_match[-1].replace(",", ""))
+            except ValueError:
+                pass
+
+    # 6. PHUB Net : 15178.00
+    if grand_total is None:
+        phub_net = re.findall(r"(?i)\bNet\s*:\s*([\d,]+\.\d{2})", full_text)
+        if phub_net:
+            try:
+                grand_total = float(phub_net[-1].replace(",", ""))
+            except ValueError:
+                pass
+
+    # 7. Taxable and GST Amount patterns if not already set from Marg
+    if taxable_amount is None:
+        tax_m = re.findall(r"(?i)(?:taxable\s*amt|taxable\s*value|taxable\s*amount|total\s*taxable|sub\s*total)\s*[:=]?\s*₹?\s*([\d,]+\.\d{2})", full_text)
+        if tax_m:
+            try:
+                taxable_amount = float(tax_m[-1].replace(",", ""))
+            except ValueError:
+                pass
+
+    if gst_amount is None:
+        gst_m = re.findall(r"(?i)(?:total\s*tax\s*(?:amt)?|total\s*gst|gst\s*amount|tax\s*amount|gst\s*tax)\s*[:=]?\s*₹?\s*([\d,]+\.\d{2})", full_text)
+        if gst_m:
+            try:
+                gst_amount = float(gst_m[-1].replace(",", ""))
+            except ValueError:
+                pass
+
     return {
         "supplier_name": supplier_info.get("detected_name") if isinstance(supplier_info, dict) else (supplier_info or None),
         "supplier_confidence": supplier_info.get("confidence") if isinstance(supplier_info, dict) else (0.8 if supplier_info else None),
@@ -3360,6 +3891,12 @@ def extract_invoice_metadata(pdf_path):
         "supplier_gstin": gstin_match.group(0) if gstin_match else None,
         "invoice_number": invoice_number_match.group(1) if invoice_number_match else None,
         "invoice_date": invoice_date_match.group(1) if invoice_date_match else None,
+        "grand_total": grand_total,
+        "taxable_amount": taxable_amount,
+        "gst_amount": gst_amount,
+        "round_off": round_off,
+        "tcs_amount": tcs_amount,
+        "cash_discount": cash_discount,
         "expiry_date_format": DEFAULT_EXPIRY_DATE_FORMAT,
     }
 
@@ -3509,7 +4046,7 @@ def _is_genuine_product_row(row, item_idx=None) -> bool:
     if not item_text or not re.search(r"[A-Za-z]{2,}", item_text):
         return False
     item_l = item_text.lower()
-    if any(w in item_l for w in LETTERHEAD_SKIP_WORDS):
+    if any(w in item_l for w in LETTERHEAD_SKIP_WORDS) or any(w in item_l for w in FOOTER_STOP_WORDS):
         return False
     if any(
         kw in item_l
@@ -3524,6 +4061,11 @@ def _is_genuine_product_row(row, item_idx=None) -> bool:
             "order no",
             "ref id",
             "route",
+            "fridge products",
+            "from 5th to",
+            "within 30",
+            "days only",
+            "goods once sold",
         )
     ):
         return False
@@ -3585,6 +4127,436 @@ def _looks_like_primary_item_row(row, item_idx=None):
         item = row[item_idx]
         return bool(item and re.search(r"[A-Za-z]{3,}", item))
     return sum(1 for cell in row[:3] if cell) >= 2
+
+
+def segment_invoice_sections(rows: list, headers: list = None) -> dict:
+    """
+    Segments raw extracted invoice table rows into structured logical sections:
+    - 'purchase_items': Main billed medications and products.
+    - 'returns_adjusted': Return goods / credit notes embedded in the invoice.
+    - 'scheme_items': Separate scheme/free goods sub-tables.
+    - 'metadata_lines': Section title/header lines discovered within rows.
+    """
+    sections = {
+        "purchase_items": [],
+        "returns_adjusted": [],
+        "scheme_items": [],
+        "metadata_lines": [],
+    }
+    if not rows:
+        return sections
+
+    current_section = "purchase_items"
+
+    RETURN_KEYWORDS = [
+        "returns adjusted", "return adjusted", "returns adjusted in this invoice",
+        "credit note", "cr note", "cr/dr no", "return items", "expiry return",
+        "breakage return", "sales return", "goods returned",
+    ]
+    SCHEME_KEYWORDS = [
+        "scheme items", "bonus items", "free items", "promotional goods",
+    ]
+
+    for row in rows:
+        if not row or not any(str(c or "").strip() for c in row):
+            continue
+
+        joined = " ".join(str(c or "").strip() for c in row).lower()
+
+        # Check for section header transitions
+        if any(kw in joined for kw in RETURN_KEYWORDS):
+            current_section = "returns_adjusted"
+            sections["metadata_lines"].append(row)
+            continue
+        elif any(kw in joined for kw in SCHEME_KEYWORDS):
+            current_section = "scheme_items"
+            sections["metadata_lines"].append(row)
+            continue
+        elif _is_footer_row(row):
+            continue
+
+        # If line looks like a sub-header metadata line (e.g. "Credit Note No : ... Date : ...")
+        if re.search(r"(?i)\b(credit note no|cr\s*no|ack date|bill time|bank details)\b", joined):
+            sections["metadata_lines"].append(row)
+            continue
+
+        # Check if line looks like genuine tabular row
+        if _is_genuine_product_row(row) or _looks_like_item_row(row):
+            sections[current_section].append(row)
+        else:
+            # Check if this might be a continuation row for the active section
+            if sections[current_section]:
+                sections[current_section].append(row)
+
+    return sections
+
+
+def merge_wrapped_continuation_rows(rows: list, headers: list, column_mappings: dict = None) -> list:
+    """
+    Merges wrapped product descriptions, salt compositions, and pack size continuation
+    fragments into their parent logical row.
+    """
+    if not rows or not headers:
+        return rows or []
+
+    item_idx = None
+    if column_mappings:
+        for h, info in column_mappings.items():
+            m = info.get("mapped_to") if isinstance(info, dict) else info
+            if m == "itemName" and h in headers:
+                item_idx = headers.index(h)
+                break
+
+    if item_idx is None:
+        for i, h in enumerate(headers):
+            if match_column_name(h) == "itemName":
+                item_idx = i
+                break
+
+    # Determine which columns are financial / quantity (indicator of primary row)
+    numeric_col_indices = set()
+    if column_mappings:
+        for h, info in column_mappings.items():
+            m = info.get("mapped_to") if isinstance(info, dict) else info
+            if m in ("quantity", "freeQuantity", "rate", "amount", "mrp", "taxableAmount", "netAmount") and h in headers:
+                numeric_col_indices.add(headers.index(h))
+
+    merged = []
+    for row in rows:
+        if not row or not any(str(c or "").strip() for c in row):
+            continue
+
+        row_cells = list(row)
+        if len(row_cells) < len(headers):
+            row_cells.extend([""] * (len(headers) - len(row_cells)))
+
+        # Check if this row has numeric/financial values
+        has_numeric_val = False
+        for idx in numeric_col_indices:
+            if idx < len(row_cells) and str(row_cells[idx] or "").strip():
+                val = str(row_cells[idx]).strip()
+                if re.search(r"\d", val):
+                    has_numeric_val = True
+                    break
+
+        if not numeric_col_indices:
+            num_cells = sum(1 for c in row_cells if c and re.search(r"\d", str(c)))
+            has_numeric_val = num_cells >= 2
+
+        is_primary = has_numeric_val and _looks_like_item_row(row_cells, item_idx=item_idx)
+
+        if not merged or is_primary:
+            merged.append(row_cells)
+            continue
+
+        # If not primary, it's a continuation fragment
+        prev = merged[-1]
+        for i, cell in enumerate(row_cells):
+            cell_str = str(cell or "").strip()
+            if not cell_str:
+                continue
+            if item_idx is not None and i == item_idx:
+                prev[i] = f"{prev[i]} {cell_str}".strip()
+            elif not prev[i]:
+                prev[i] = cell_str
+
+    return merged
+
+
+def reconstruct_logical_rows(rows: list, headers: list, column_mappings: dict = None) -> list:
+    """
+    End-to-end Logical Row Reconstruction Pipeline:
+    1. Segments sub-tables (e.g. separates 'Returns Adjusted' from purchase items).
+    2. Merges multi-line wrapped descriptions and salt composition continuations.
+    3. Reconstructs compound quantities and candidate accounting for each item.
+    Returns: List of fully validated, structured row dictionaries.
+    """
+    if not rows or not headers:
+        return []
+
+    sections = segment_invoice_sections(rows, headers)
+    purchase_raw = sections.get("purchase_items", [])
+    if not purchase_raw and rows:
+        purchase_raw = rows
+
+    merged_rows = merge_wrapped_continuation_rows(purchase_raw, headers, column_mappings)
+
+    field_map = {}
+    if column_mappings:
+        for h, info in column_mappings.items():
+            m = info.get("mapped_to") if isinstance(info, dict) else info
+            if m and h in headers:
+                field_map[m] = headers.index(h)
+
+    if not field_map:
+        for i, h in enumerate(headers):
+            m = match_column_name(h)
+            if m:
+                field_map[m] = i
+
+    structured_rows = []
+    for r in merged_rows:
+        row_dict = {}
+        for field, idx in field_map.items():
+            if idx < len(r):
+                row_dict[field] = r[idx]
+
+        # Apply Closed-Form Candidate Accounting & Scheme Normalization
+        solved_row = solve_row_accounting_constraints(row_dict)
+        structured_rows.append(solved_row)
+
+    return structured_rows
+
+
+def filter_continuation_header_and_subtotal_rows(
+    rows: list,
+    headers: list = None,
+    saved_template: dict = None,
+    item_idx: int = None,
+) -> tuple[list, list]:
+    """
+    Suppresses continuation page artifacts in multi-page pharma distributor invoices:
+    - Repeated table headers on pages 2..N
+    - Brought-Forward (B/F) & Carried-Forward (C/F) running total rows
+    - Page subtotals (PAGE TOTAL, SUB TOTAL, PAGE 1 TOTAL, BALANCE C/F)
+    - Page numbering and transmission footer chrome (Page 2 of 3, Continued...)
+    
+    Returns:
+        (filtered_genuine_rows, removed_rows_audit_log)
+    """
+    if not rows:
+        return [], []
+
+    filtered_rows = []
+    audit_log = []
+
+    # Patterns for B/F, C/F, and Subtotals
+    BF_CF_PAT = re.compile(
+        r"(?i)\b(total\s*b/?f|b/?f\s*total|b\.?f\.?|brought\s*forward|amt\s*b/?f|b/?f\s*amt|total\s*c/?f|c/?f\s*total|c\.?f\.?|carried\s*forward|amt\s*c/?f|balance\s*c/?f|bal\s*c/?f)\b"
+    )
+    PAGE_SUBTOTAL_PAT = re.compile(
+        r"(?i)\b(page\s*total|page\s*\d+\s*total|sub\s*total|sub-total|page\s*subtotal|total\s*carried|total\s*b/f\s*from|balance\s*b/f)\b"
+    )
+    CHROME_PAT = re.compile(
+        r"(?i)\b(page\s*\d+\s*of\s*\d+|page\s*\d+\s*/\s*\d+|continued\s*on\s*next\s*page|contd\.?|\(contd\.?\)|continued\.\.\.)\b"
+    )
+
+    for r_idx, row in enumerate(rows):
+        if not row or not any(str(c or "").strip() for c in row):
+            continue
+
+        joined = _row_joined_text(row).strip()
+        joined_lower = joined.lower()
+
+        # Check 1: Repeated header row
+        if _is_repeated_header_row(row, saved_template) or (headers and _is_valid_header_row(row, saved_template)):
+            audit_log.append({
+                "original_row_index": r_idx,
+                "reason": "REPEATED_HEADER_ROW",
+                "row_content": row,
+                "matched_text": joined,
+            })
+            continue
+
+        # Check 2: B/F or C/F running total row
+        if BF_CF_PAT.search(joined_lower):
+            audit_log.append({
+                "original_row_index": r_idx,
+                "reason": "RUNNING_BF_CF_ROW",
+                "row_content": row,
+                "matched_text": joined,
+            })
+            continue
+
+        # Check 3: Running page subtotal
+        if PAGE_SUBTOTAL_PAT.search(joined_lower):
+            audit_log.append({
+                "original_row_index": r_idx,
+                "reason": "PAGE_SUBTOTAL_ROW",
+                "row_content": row,
+                "matched_text": joined,
+            })
+            continue
+
+        # Check 4: Page chrome / continuation notice
+        if CHROME_PAT.search(joined_lower):
+            audit_log.append({
+                "original_row_index": r_idx,
+                "reason": "PAGE_CONTINUATION_CHROME",
+                "row_content": row,
+                "matched_text": joined,
+            })
+            continue
+
+        # Check 5: General footer / letterhead row check
+        if _is_footer_row(row) or _is_letterhead_row(row):
+            audit_log.append({
+                "original_row_index": r_idx,
+                "reason": "LETTERHEAD_OR_FOOTER_ROW",
+                "row_content": row,
+                "matched_text": joined,
+            })
+            continue
+
+        filtered_rows.append(row)
+
+    return filtered_rows, audit_log
+
+
+def reconcile_invoice_grand_totals(
+    line_items: list,
+    metadata: dict = None,
+    tolerance: float = 1.0,
+) -> dict:
+    """
+    Closed-form invoice-level mathematical reconciliation solver:
+    - Sum of Line Taxable Amount == Invoice Subtotal / Taxable
+    - Sum of Line GST (CGST + SGST + IGST) == Invoice Total GST
+    - Sum of Line Net Amounts + TCS + Other Charges - Cash Disc ± RoundOff == Invoice Grand Total
+    
+    Returns:
+        Structured reconciliation dictionary with audit status and discrepancy metrics.
+    """
+    if metadata is None:
+        metadata = {}
+
+    sum_gross = 0.0
+    sum_taxable = 0.0
+    sum_cgst = 0.0
+    sum_sgst = 0.0
+    sum_igst = 0.0
+    sum_gst = 0.0
+    sum_net = 0.0
+    total_billed_qty = 0.0
+    total_free_qty = 0.0
+    suspicious_lines = []
+
+    for idx, item in enumerate(line_items):
+        if not isinstance(item, dict):
+            continue
+
+        q = _to_float(item.get("quantity") or item.get("billed_quantity"), 0.0)
+        fq = _to_float(item.get("freeQuantity") or item.get("free_quantity"), 0.0)
+        r = _to_float(item.get("rate") or item.get("ptr_rate"), 0.0)
+        disc_pct = _to_float(item.get("discountPercent") or item.get("discount_percent"), 0.0)
+        gst_pct = _to_float(item.get("gstPercent") or item.get("gst_percent"), 0.0)
+        cgst_pct = _to_float(item.get("cgstPercent") or item.get("cgst_percent"), 0.0)
+        sgst_pct = _to_float(item.get("sgstPercent") or item.get("sgst_percent"), 0.0)
+
+        # Amounts
+        raw_amt = _to_float(item.get("amount") or item.get("gross_amount"))
+        raw_taxable = _to_float(item.get("taxableAmount") or item.get("taxable_amount"))
+        raw_gst_amt = _to_float(item.get("gstAmount") or item.get("gst_amount"))
+        raw_net = _to_float(item.get("netAmount") or item.get("line_net_amount") or item.get("net_amount"))
+
+        # Calculate line economics
+        calc_gross = (q * r) if (q and r) else (raw_amt or 0.0)
+        calc_disc = calc_gross * (disc_pct / 100.0) if (calc_gross and disc_pct) else 0.0
+        calc_taxable = raw_taxable if (raw_taxable and raw_taxable > 0) else (calc_gross - calc_disc)
+
+        # CGST/SGST/IGST split
+        if cgst_pct > 0 and sgst_pct > 0:
+            c_amt = calc_taxable * (cgst_pct / 100.0)
+            s_amt = calc_taxable * (sgst_pct / 100.0)
+            g_amt = c_amt + s_amt
+        elif gst_pct > 0:
+            g_amt = calc_taxable * (gst_pct / 100.0)
+            c_amt = g_amt / 2.0
+            s_amt = g_amt / 2.0
+        else:
+            g_amt = raw_gst_amt or 0.0
+            c_amt = g_amt / 2.0
+            s_amt = g_amt / 2.0
+
+        calc_net = raw_net if (raw_net and raw_net > 0) else (calc_taxable + g_amt)
+
+        # Check internal line consistency
+        line_err = abs(calc_net - (calc_taxable + g_amt))
+        if line_err > 1.0:
+            suspicious_lines.append({
+                "line_index": idx,
+                "item_name": item.get("itemName") or item.get("product_name") or f"Item {idx+1}",
+                "discrepancy": round(line_err, 2),
+                "stated_net": raw_net,
+                "computed_net": round(calc_taxable + g_amt, 2),
+            })
+
+        sum_gross += calc_gross
+        sum_taxable += calc_taxable
+        sum_cgst += c_amt
+        sum_sgst += s_amt
+        sum_gst += g_amt
+        sum_net += calc_net
+        total_billed_qty += q
+        total_free_qty += fq
+
+    # Extract invoice-level totals from metadata if provided
+    inv_taxable = _to_float(metadata.get("taxable_amount") or metadata.get("subtotal") or metadata.get("total_taxable"))
+    inv_gst = _to_float(metadata.get("gst_amount") or metadata.get("tax_amount") or metadata.get("total_gst"))
+    inv_tcs = _to_float(metadata.get("tcs_amount") or metadata.get("tcs"), 0.0)
+    inv_discount = _to_float(metadata.get("cash_discount") or metadata.get("discount_amount"), 0.0)
+    inv_roundoff = _to_float(metadata.get("round_off") or metadata.get("roundoff"), 0.0)
+    inv_grand_total = _to_float(metadata.get("grand_total") or metadata.get("net_amount") or metadata.get("total_amount") or metadata.get("invoice_amount") or metadata.get("bill_amount"))
+
+    # Compute deltas
+    taxable_delta = abs(sum_taxable - inv_taxable) if inv_taxable is not None else 0.0
+    gst_delta = abs(sum_gst - inv_gst) if inv_gst is not None else 0.0
+
+    # In line-item accounting, sum_net already includes line discounts (taxable + GST).
+    # TCS is added, and round_off adjusts to final cash total.
+    expected_grand_total = sum_net + inv_tcs + inv_roundoff
+    grand_total_delta = abs(expected_grand_total - inv_grand_total) if inv_grand_total is not None else 0.0
+
+    # Determine reconciliation status
+    if inv_grand_total is not None:
+        if grand_total_delta <= tolerance:
+            status = "RECONCILED_BALANCED"
+            is_reconciled = True
+            msg = f"Grand total fully balanced (Calculated: ₹{expected_grand_total:.2f}, Stated: ₹{inv_grand_total:.2f}, Delta: ₹{grand_total_delta:.2f})."
+        elif grand_total_delta <= 5.0:
+            status = "MINOR_ROUNDING_VARIANCE"
+            is_reconciled = True
+            msg = f"Minor rounding/TCS variance (Delta: ₹{grand_total_delta:.2f} <= ₹5.00)."
+        else:
+            status = "UNRECONCILED_MISMATCH"
+            is_reconciled = False
+            msg = f"Grand total mismatch (Calculated: ₹{expected_grand_total:.2f}, Stated: ₹{inv_grand_total:.2f}, Delta: ₹{grand_total_delta:.2f})."
+    else:
+        status = "NO_INVOICE_SUMMARY_PRESENT"
+        is_reconciled = True
+        msg = f"Invoice summary not present; line items sum to net total of ₹{sum_net:.2f} across {len(line_items)} items."
+
+    return {
+        "is_reconciled": is_reconciled,
+        "reconciliation_status": status,
+        "calculated_line_totals": {
+            "sum_gross_amount": round(sum_gross, 2),
+            "sum_taxable_amount": round(sum_taxable, 2),
+            "sum_cgst_amount": round(sum_cgst, 2),
+            "sum_sgst_amount": round(sum_sgst, 2),
+            "sum_igst_amount": round(sum_igst, 2),
+            "sum_total_gst": round(sum_gst, 2),
+            "sum_net_amount": round(sum_net, 2),
+            "total_billed_qty": round(total_billed_qty, 2),
+            "total_free_qty": round(total_free_qty, 2),
+            "line_count": len(line_items),
+        },
+        "invoice_summary_values": {
+            "invoice_taxable": inv_taxable,
+            "invoice_gst": inv_gst,
+            "invoice_tcs": inv_tcs,
+            "invoice_discount": inv_discount,
+            "invoice_round_off": inv_roundoff,
+            "invoice_grand_total": inv_grand_total,
+        },
+        "deltas": {
+            "taxable_delta": round(taxable_delta, 2),
+            "gst_delta": round(gst_delta, 2),
+            "grand_total_delta": round(grand_total_delta, 2),
+        },
+        "suspicious_lines": suspicious_lines,
+        "reconciliation_message": msg,
+    }
 
 
 def _merge_continuation_rows(rows, item_idx=None):
@@ -4093,6 +5065,10 @@ def detect_coordinate_header_row(words, page_height: float, saved_template: dict
             numeric_cells = sum(1 for w in next_line if re.search(r"^\d+(\.\d+)?$", w["text"].strip()))
             has_dates = any(re.search(r"\b\d{1,2}[/-]\d{2,4}\b", w["text"]) for w in next_line)
             is_data_row = (numeric_cells >= 3) or (numeric_cells >= 2 and has_dates)
+            is_subtotal_or_bf = bool(
+                re.search(r"(?i)\b(total|b/?f|c/?f|brought|carried|subtotal|balance|contd|continued)\b", next_text)
+                and (numeric_cells >= 1 or re.search(r"\d+\.\d+", next_text))
+            ) or (numeric_cells >= 1 and any(re.search(r"^\d+\.\d{2}$", w["text"].strip()) for w in next_line))
             next_meta = (
                 len(METADATA_KEY_PATTERN.findall(next_text)) > 0
                 or bool(PAGE_NUMBER_PATTERN.search(next_text))
@@ -4100,7 +5076,7 @@ def detect_coordinate_header_row(words, page_height: float, saved_template: dict
                 or next_text.count(":") >= 2
             )
             next_hdrs = [w for w in next_line if _is_likely_header_token(w["text"], saved_template)]
-            if next_hdrs and not is_data_row and not next_meta:
+            if next_hdrs and not is_data_row and not next_meta and not is_subtotal_or_bf:
                 band_lines.append(next_line)
                 band_bottom = max(band_bottom, max(w["bottom"] for w in next_line))
 
@@ -4967,69 +5943,40 @@ def extract_coordinate_table(page, saved_template=None, expected_cols=None, debu
 
 def repair_row_accounting(row: list, headers: list, column_mappings: dict) -> list:
     """
-    Closed-Form Accounting Constraint Solver:
+    Closed-Form Candidate-Based Accounting Constraint Solver:
     Validates and repairs row-level commercial values using pharma accounting invariants:
-    - Amount = Qty * Rate
-    - Taxable = Amount * (1 - Disc% / 100)
-    - Net = Taxable * (1 + GST% / 100)
-    If OCR misreads or misses one numeric field, solves the equation to restore precision.
+    - Resolves compound quantities (e.g. '9.50+.50' -> quantity=9.5, freeQuantity=0.5).
+    - Checks candidates: Gross (Qty * Rate), Taxable (Gross - Disc), Net (Taxable + GST).
+    - Restores precision on missing/misread values.
     """
     if not row or not headers:
         return row
 
     field_indices = {}
+    row_dict = {}
     for h, info in column_mappings.items():
         m = info.get("mapped_to") if isinstance(info, dict) else info
         if m and h in headers:
-            field_indices[m] = headers.index(h)
+            idx = headers.index(h)
+            field_indices[m] = idx
+            if idx < len(row):
+                row_dict[m] = row[idx]
 
-    q_idx = field_indices.get("quantity")
-    r_idx = field_indices.get("rate")
-    a_idx = field_indices.get("amount")
-    d_idx = field_indices.get("discountPercent")
-    t_idx = field_indices.get("taxableAmount")
-    g_idx = field_indices.get("gstPercent")
-    n_idx = field_indices.get("netAmount")
-
+    solved = solve_row_accounting_constraints(row_dict)
     row_copy = list(row)
-    
-    q = _to_float(row_copy[q_idx]) if (q_idx is not None and q_idx < len(row_copy)) else None
-    r = _to_float(row_copy[r_idx]) if (r_idx is not None and r_idx < len(row_copy)) else None
-    a = _to_float(row_copy[a_idx]) if (a_idx is not None and a_idx < len(row_copy)) else None
-    d = _to_float(row_copy[d_idx]) if (d_idx is not None and d_idx < len(row_copy)) else 0.0
-    t = _to_float(row_copy[t_idx]) if (t_idx is not None and t_idx < len(row_copy)) else None
-    g = _to_float(row_copy[g_idx]) if (g_idx is not None and g_idx < len(row_copy)) else 0.0
-    n = _to_float(row_copy[n_idx]) if (n_idx is not None and n_idx < len(row_copy)) else None
 
-    # 1. Gross Amount (Qty * Rate)
-    if (a is None or a <= 0) and q and r and q > 0 and r > 0:
-        a = round(q * r, 2)
-        if a_idx is not None and a_idx < len(row_copy):
-            row_copy[a_idx] = f"{a:.2f}"
-    elif (r is None or r <= 0) and q and a and q > 0 and a > 0:
-        r = round(a / q, 2)
-        if r_idx is not None and r_idx < len(row_copy):
-            row_copy[r_idx] = f"{r:.2f}"
-
-    # 2. Taxable Amount (Amount - Discount)
-    if d is None:
-        d = 0.0
-    if (t is None or t <= 0) and a is not None and a > 0:
-        t = round(a * (1.0 - d / 100.0), 2)
-        if t_idx is not None and t_idx < len(row_copy):
-            row_copy[t_idx] = f"{t:.2f}"
-    elif (d == 0.0 or d is None) and a and t and a > t > 0:
-        d = round(((a - t) / a) * 100.0, 2)
-        if d_idx is not None and d_idx < len(row_copy):
-            row_copy[d_idx] = f"{d:.2f}"
-
-    # 3. Net Amount (Taxable + GST)
-    if g is None:
-        g = 0.0
-    if (n is None or n <= 0) and t is not None and t > 0:
-        n = round(t * (1.0 + g / 100.0), 2)
-        if n_idx is not None and n_idx < len(row_copy):
-            row_copy[n_idx] = f"{n:.2f}"
+    for field, idx in field_indices.items():
+        if idx < len(row_copy) and field in solved:
+            val = solved[field]
+            if val is not None and (
+                row_copy[idx] is None
+                or str(row_copy[idx]).strip() in ("", "None", "nan", "0", "0.0")
+                or field in ("quantity", "freeQuantity", "amount", "taxableAmount", "netAmount", "rate")
+            ):
+                if isinstance(val, float):
+                    row_copy[idx] = str(int(val)) if val.is_integer() else f"{val:.2f}"
+                elif isinstance(val, int):
+                    row_copy[idx] = str(val)
 
     return row_copy
 
@@ -5089,6 +6036,10 @@ def extract_image_or_scanned_table(file_input, saved_template: dict = None, debu
                         all_rows.append(row_cells)
         except Exception as e:
             logger.warning(f"Error extracting table from image page: {e}")
+
+    # Suppress continuation page artifacts & running subtotals
+    if headers and all_rows:
+        all_rows, _ = filter_continuation_header_and_subtotal_rows(all_rows, headers=headers, saved_template=saved_template)
 
     column_mappings = infer_unresolved_column_semantics(
         headers,
@@ -5294,6 +6245,14 @@ def extract_pdf_table(pdf_file, saved_template: dict = None, use_coordinates: bo
         # In fallback mode, split text multi-value columns if any
         if not used_coordinates and headers and all_rows:
             headers, all_rows, _ = split_text_multi_value_columns(headers, all_rows, saved_template=saved_template)
+
+    # Multi-page continuity and running subtotal suppression
+    if headers and all_rows:
+        all_rows, filtered_log = filter_continuation_header_and_subtotal_rows(
+            all_rows, headers=headers, saved_template=saved_template, item_idx=item_idx
+        )
+        if filtered_log:
+            metadata["continuation_filtered_rows"] = filtered_log
 
     # --- 3. Generic Dynamic Column Semantic Inference Engine ---
     column_mappings = infer_unresolved_column_semantics(

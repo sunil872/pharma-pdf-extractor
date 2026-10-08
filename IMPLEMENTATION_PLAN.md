@@ -126,17 +126,35 @@ Retail pharmacy stores and hospital pharmacies in India receive 10–50 purchase
 
 ## 🔮 4. Upcoming Roadmap & Next Horizons
 
-### 🟡 Phase 9: Direct ERP Output Adapters (Current Focus)
-- [ ] **Marg ERP 9+ Adapter**: Generate native Marg purchase import CSV/DBF format with item mapping code.
-- [ ] **TallyPrime XML Generator**: Generate standard Tally purchase vouchers with ledger mappings and GST tax ledgers.
-- [ ] **Vyapar / Busy Excel Format**: One-click export formatted specifically for Vyapar and Busy accounting.
+### ✅ Phase 9: Direct ERP Output Adapters & Cloud Stock Sync Engine
+- **Status**: Completed
+- **Deliverables**:
+  - **Marg ERP 9+ CSV Adapter**: [`export_to_marg_csv`](file:///export_engine.py#L316) generating standard Marg purchase format.
+  - **TallyPrime XML Voucher Generator**: [`export_to_tally_xml`](file:///export_engine.py#L398) generating complete purchase vouchers with batch allocations & GST ledgers.
+  - **Busy & Vyapar Excel Exporter**: [`export_to_busy_vyapar_excel`](file:///export_engine.py#L525) generating POS/retail spreadsheet imports.
+  - **Cloud Stock Inventory Database Sync**: [`StorageService.ingest_stock_payload`](file:///storage/repositories.py#L858) for updating retail stock lists with received units (`Billed + Free`) and return deductions.
 
-### ⚪ Phase 10: Mobile Photo Capture & PWA
-- [ ] Lightweight Progressive Web App (PWA) interface for smartphone camera scanning at pharmacy counters.
-- [ ] Auto-edge detection and perspective correction for mobile camera snapshots.
+---
 
-### ⚪ Phase 11: Master Drug Database Integration
-- [ ] Fuzzy matching of extracted `itemName` against a standardized Master Medicine Database (100k+ Indian pharma brands) to automatically populate standard composition, salt, and schedule category (H/H1/X).
+### ✅ Phase 10: Automatic Image Preprocessing, Perspective Rectification & Shadow Attenuation
+- **Status**: Completed
+- **Deliverables**:
+  - **4-Point Homography Warp**: [`four_point_perspective_transform`](file:///ocr_engine.py#L97) and [`detect_document_corners`](file:///ocr_engine.py#L131) for automatically unwarping angled phone photos and scanned sheets.
+  - **Morphological Shadow Attenuation**: [`remove_shadows_and_normalize_lighting`](file:///ocr_engine.py#L185) for removing harsh shadows and leveling illumination across paper.
+  - **Transparent Ingestion**: Operates automatically on all uploaded PDFs and images without confusing secondary UI modes.
+
+---
+
+### ✅ Phase 11: Master Drug Database & Statutory Generic Normalization
+- **Status**: Completed
+- **Deliverables**:
+  - **Master Drug Catalog Engine**: [`drug_database.py`](file:///drug_database.py) with 100+ standard formulations, API salt compositions, and manufacturer data.
+  - **Fuzzy Brand Matcher**: [`match_master_drug`](file:///drug_database.py#L187) and [`clean_drug_query_name`](file:///drug_database.py#L168) for resolving cryptic distributor descriptions.
+  - **Statutory Schedule Tagger**: [`enrich_line_items_with_drug_master`](file:///drug_database.py#L236) tagging Schedule H1 Antibiotics, Schedule H Rx, and General / OTC products.
+  - **Inventory & Export Persistence**: Generic composition and schedule fields stored in SQLite stock ledger and exported in canonical JSON.
+
+---
+
 
 ---
 

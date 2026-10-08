@@ -200,6 +200,83 @@ def init_db(db_path: Optional[str] = None) -> None:
             );
         """)
 
+        # 7. Stock Inventory Master Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS stock_inventory (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                product_name TEXT NOT NULL,
+                pack TEXT NOT NULL DEFAULT '',
+                batch_no TEXT NOT NULL DEFAULT '',
+                expiry_date TEXT NOT NULL DEFAULT '',
+                hsn_code TEXT NOT NULL DEFAULT '',
+                current_stock_qty REAL NOT NULL DEFAULT 0.0,
+                mrp REAL NOT NULL DEFAULT 0.0,
+                ptr_rate REAL NOT NULL DEFAULT 0.0,
+                discount_percent REAL NOT NULL DEFAULT 0.0,
+                gst_percent REAL NOT NULL DEFAULT 0.0,
+                supplier_id INTEGER,
+                supplier_name TEXT,
+                last_invoice_no TEXT,
+                last_received_date TEXT,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (supplier_id) REFERENCES suppliers (id) ON DELETE SET NULL,
+                UNIQUE (product_name, pack, batch_no)
+            );
+        """)
+
+        # 8. Stock Movements Ledger Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS stock_movements (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                stock_item_id INTEGER NOT NULL,
+                invoice_no TEXT NOT NULL,
+                movement_type TEXT NOT NULL DEFAULT 'PURCHASE_RECEIPT',
+                billed_qty REAL NOT NULL DEFAULT 0.0,
+                free_qty REAL NOT NULL DEFAULT 0.0,
+                total_qty REAL NOT NULL DEFAULT 0.0,
+                rate REAL NOT NULL DEFAULT 0.0,
+                net_amount REAL NOT NULL DEFAULT 0.0,
+                created_at TEXT NOT NULL,
+                FOREIGN KEY (stock_item_id) REFERENCES stock_inventory (id) ON DELETE CASCADE
+            );
+        """)
+
+        # 9. Pharmacy Master Items Table (Internal Pharmacy ERP Drug Master)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS pharmacy_master_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                item_code TEXT NOT NULL UNIQUE,
+                item_name TEXT NOT NULL,
+                normalized_name TEXT NOT NULL,
+                pack TEXT NOT NULL DEFAULT '',
+                default_hsn TEXT NOT NULL DEFAULT '30049099',
+                default_gst_percent REAL NOT NULL DEFAULT 12.0,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            );
+        """)
+
+        # 10. Product Aliases Table (Supplier description -> Master Item Code)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS product_aliases (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                raw_alias_text TEXT NOT NULL,
+                normalized_alias TEXT NOT NULL,
+                supplier_id INTEGER,
+                master_item_id INTEGER,
+                master_item_code TEXT NOT NULL,
+                master_item_name TEXT NOT NULL,
+                match_count INTEGER NOT NULL DEFAULT 1,
+                confidence REAL NOT NULL DEFAULT 1.0,
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                FOREIGN KEY (supplier_id) REFERENCES suppliers (id) ON DELETE SET NULL,
+                FOREIGN KEY (master_item_id) REFERENCES pharmacy_master_items (id) ON DELETE SET NULL,
+                UNIQUE (raw_alias_text, supplier_id)
+            );
+        """)
+
         # Indexes for high-performance lookups
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_suppliers_gstin ON suppliers (gstin);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_suppliers_key ON suppliers (supplier_key);")
@@ -212,7 +289,15 @@ def init_db(db_path: Optional[str] = None) -> None:
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_runs_doc_id ON extraction_runs (document_id);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_reviews_session_id ON review_sessions (review_session_id);")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_audit_event_type ON audit_events (event_type);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_stock_prod_batch ON stock_inventory (product_name, batch_no);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_stock_expiry ON stock_inventory (expiry_date);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_movements_item_id ON stock_movements (stock_item_id);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_master_item_code ON pharmacy_master_items (item_code);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_master_norm_name ON pharmacy_master_items (normalized_name);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_alias_norm ON product_aliases (normalized_alias);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_alias_supplier ON product_aliases (supplier_id, raw_alias_text);")
 
         conn.commit()
     finally:
         conn.close()
+
